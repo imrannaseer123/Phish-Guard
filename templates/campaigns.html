@@ -1,0 +1,534 @@
+{% extends "base.html" %}
+{% block title %}Phishing Campaigns — PhishGuard{% endblock %}
+
+{% block content %}
+<style>
+    /* ── Campaign Page Animations ─────────────────────────────────────────── */
+    @keyframes campaignFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px) scale(0.97);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    @keyframes campaignSlideIn {
+        from {
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+
+        100% {
+            background-position: 200% 0;
+        }
+    }
+
+    @keyframes pulseGlow {
+
+        0%,
+        100% {
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.15);
+        }
+
+        50% {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.35);
+        }
+    }
+
+    @keyframes radarSweep {
+        from {
+            transform: rotate(0deg);
+        }
+
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    @keyframes radarPing {
+        0% {
+            opacity: 1;
+            transform: scale(0.3);
+        }
+
+        80% {
+            opacity: 0;
+            transform: scale(1);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-8px);
+        }
+    }
+
+    @keyframes countUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes borderFlow {
+        0% {
+            background-position: 0% 50%;
+        }
+
+        50% {
+            background-position: 100% 50%;
+        }
+
+        100% {
+            background-position: 0% 50%;
+        }
+    }
+
+    .campaign-card {
+        animation: campaignFadeUp 0.5s ease-out both;
+    }
+
+    .campaign-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .campaign-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .campaign-header-gradient {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.08), rgba(59, 130, 246, 0.1));
+        border: 1px solid rgba(99, 102, 241, 0.15);
+    }
+
+    [data-theme="light"] .campaign-header-gradient,
+    html:not(.dark) .campaign-header-gradient {
+        background: linear-gradient(135deg, rgba(99, 102, 241, 0.08), rgba(168, 85, 247, 0.04), rgba(59, 130, 246, 0.06));
+        border: 1px solid rgba(99, 102, 241, 0.12);
+    }
+
+    .stat-card {
+        animation: campaignFadeUp 0.6s ease-out both;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .shimmer-bar {
+        background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.25), transparent);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+    }
+
+    .risk-badge-high {
+        animation: pulseGlow 2s ease-in-out infinite;
+    }
+
+    .risk-badge-medium {
+        animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .domain-chip {
+        animation: campaignSlideIn 0.4s ease-out both;
+        transition: background 0.2s, transform 0.2s;
+    }
+
+    .domain-chip:hover {
+        transform: scale(1.05);
+    }
+
+    /* Radar SVG animation for empty state */
+    .radar-svg-wrapper {
+        width: 160px;
+        height: 160px;
+        animation: float 4s ease-in-out infinite;
+        filter: drop-shadow(0 0 20px rgba(99, 102, 241, 0.3));
+    }
+
+    .radar-svg-wrapper svg {
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    /* Timeline connector */
+    .timeline-dot {
+        width: 8px;
+        height: 8px;
+        background: rgb(99, 102, 241);
+        border-radius: 50%;
+        box-shadow: 0 0 8px rgba(99, 102, 241, 0.4);
+        flex-shrink: 0;
+    }
+
+    .timeline-line {
+        width: 2px;
+        background: linear-gradient(to bottom, rgba(99, 102, 241, 0.4), rgba(99, 102, 241, 0.1));
+        flex-shrink: 0;
+    }
+</style>
+
+<section class="max-w-7xl mx-auto space-y-8">
+
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <div class="campaign-header-gradient rounded-2xl p-8 backdrop-blur-md"
+        style="animation: campaignFadeUp 0.4s ease-out both">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+                        <span class="text-xl">🔗</span>
+                    </div>
+                    <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                        Campaign <span class="text-indigo-600 dark:text-indigo-400">Detection</span>
+                    </h1>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 ml-[52px] text-sm leading-relaxed max-w-xl">
+                    Automatically clusters phishing emails by similarity — detecting coordinated attacks via
+                    <span class="text-indigo-600 dark:text-indigo-400 font-medium">SimHash fingerprinting</span>,
+                    <span class="text-purple-600 dark:text-purple-400 font-medium">body overlap analysis</span>, and
+                    <span class="text-blue-600 dark:text-blue-400 font-medium">domain clustering</span>.
+                </p>
+            </div>
+
+            {% if campaigns %}
+            <!-- Summary stats -->
+            <div class="flex gap-3 flex-shrink-0">
+                <div class="stat-card bg-white/70 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-white/10 px-5 py-3 text-center"
+                    style="animation-delay: 0.1s">
+                    <div class="text-2xl font-black text-indigo-600 dark:text-indigo-400">{{ campaigns|length }}</div>
+                    <div
+                        class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                        Campaigns</div>
+                </div>
+                <div class="stat-card bg-white/70 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-white/10 px-5 py-3 text-center"
+                    style="animation-delay: 0.2s">
+                    <div class="text-2xl font-black text-purple-600 dark:text-purple-400">{{
+                        campaigns|map(attribute='email_count')|sum }}</div>
+                    <div
+                        class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                        Emails</div>
+                </div>
+                <div class="stat-card bg-white/70 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-white/10 px-5 py-3 text-center"
+                    style="animation-delay: 0.3s">
+                    {% set all_domains = [] %}
+                    {% for c in campaigns %}{% for d in c.sender_domains %}{% if d and d not in all_domains %}{% if
+                    all_domains.append(d) %}{% endif %}{% endif %}{% endfor %}{% endfor %}
+                    <div class="text-2xl font-black text-blue-600 dark:text-blue-400">{{ all_domains|length }}</div>
+                    <div
+                        class="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold mt-0.5">
+                        Domains</div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if campaigns %}
+        <div class="shimmer-bar h-[2px] rounded-full mt-6 opacity-60"></div>
+        {% endif %}
+    </div>
+
+    {% if campaigns %}
+    <!-- ── Campaign Cards Grid ─────────────────────────────────────────────── -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for camp in campaigns %}
+        <div class="campaign-card bg-white/80 dark:bg-slate-800/50 backdrop-blur-md rounded-2xl border border-slate-200/80 dark:border-white/[0.07] overflow-hidden"
+            style="animation-delay: {{ loop.index * 0.08 }}s">
+
+            <!-- Card Header -->
+            <div class="px-6 pt-5 pb-4 border-b border-slate-100 dark:border-white/[0.06]">
+                <div class="flex items-start justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-9 h-9 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                            <span class="text-white text-sm font-black">#{{ loop.index }}</span>
+                        </div>
+                        <div>
+                            <span
+                                class="block text-[10px] font-mono text-slate-400 dark:text-slate-500 uppercase tracking-widest">Campaign</span>
+                            <span class="font-mono font-semibold text-sm text-slate-800 dark:text-slate-200">{{
+                                camp.campaign_id[:12] }}…</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200/60 dark:border-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            {{ camp.email_count }} emails
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="px-6 py-5 space-y-5">
+
+                <!-- Sender Domains -->
+                <div>
+                    <div class="flex items-center gap-2 mb-2.5">
+                        <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                        </svg>
+                        <span
+                            class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Sender
+                            Domains</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for d in camp.sender_domains %}
+                        {% if d %}
+                        <span
+                            class="domain-chip px-2.5 py-1 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 text-xs rounded-lg font-mono border border-slate-200/60 dark:border-slate-600/40"
+                            style="animation-delay: {{ loop.index * 0.06 }}s">
+                            {{ d }}
+                        </span>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-5">
+                    <!-- Intents -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-2.5">
+                            <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <span
+                                class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Intents</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            {% for intent in camp.intents %}
+                            {% if intent %}
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-semibold border
+                                         bg-amber-50 text-amber-700 border-amber-200/60
+                                         dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/20">
+                                {{ intent }}
+                            </span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Risk Levels -->
+                    <div>
+                        <div class="flex items-center gap-2 mb-2.5">
+                            <svg class="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span
+                                class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Risk</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            {% for rl in camp.risk_levels %}
+                            {% if rl %}
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase
+                                {% if rl == 'High' %}
+                                    risk-badge-high bg-red-50 text-red-600 border border-red-200/60 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/20
+                                {% elif rl == 'Medium' %}
+                                    risk-badge-medium bg-yellow-50 text-yellow-700 border border-yellow-200/60 dark:bg-yellow-500/15 dark:text-yellow-400 dark:border-yellow-500/20
+                                {% else %}
+                                    bg-emerald-50 text-emerald-600 border border-emerald-200/60 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/20
+                                {% endif %}">
+                                {{ rl }}
+                            </span>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Timeline -->
+                <div class="flex items-center gap-3 pt-3 border-t border-slate-100/80 dark:border-white/[0.05]">
+                    <div class="timeline-dot"></div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">{{ camp.first_seen[:10] if
+                        camp.first_seen else 'N/A' }}</span>
+                    <div
+                        class="flex-1 h-[2px] bg-gradient-to-r from-indigo-400/30 via-indigo-400/10 to-indigo-400/30 rounded-full">
+                    </div>
+                    <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">{{ camp.last_seen[:10] if
+                        camp.last_seen else 'N/A' }}</span>
+                    <div class="timeline-dot"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+
+    <!-- ── Empty State ─────────────────────────────────────────────────────── -->
+    <div class="text-center py-24 bg-white/50 dark:bg-slate-800/20 backdrop-blur-sm rounded-2xl border border-dashed border-slate-300/60 dark:border-slate-700/60"
+        style="animation: campaignFadeUp 0.6s ease-out both">
+
+        <div class="flex justify-center mb-8">
+            <div class="radar-svg-wrapper">
+                <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Outer ring -->
+                    <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(99,102,241,0.2)" stroke-width="1.5" />
+                    <!-- Middle ring -->
+                    <circle cx="80" cy="80" r="50" fill="none" stroke="rgba(99,102,241,0.15)" stroke-width="1.5" />
+                    <!-- Inner ring -->
+                    <circle cx="80" cy="80" r="30" fill="none" stroke="rgba(99,102,241,0.1)" stroke-width="1.5" />
+                    <!-- Cross hairs -->
+                    <line x1="80" y1="8" x2="80" y2="152" stroke="rgba(99,102,241,0.08)" stroke-width="1" />
+                    <line x1="8" y1="80" x2="152" y2="80" stroke="rgba(99,102,241,0.08)" stroke-width="1" />
+
+                    <!-- Sweep line (rotating via native SVG animateTransform) -->
+                    <g>
+                        <line x1="80" y1="80" x2="80" y2="10" stroke="rgba(99,102,241,0.7)" stroke-width="2"
+                            stroke-linecap="round" />
+                        <path d="M80,80 L80,10 A70,70 0 0,0 25.1,45" fill="rgba(99,102,241,0.1)" />
+                        <animateTransform attributeName="transform" type="rotate" from="0 80 80" to="360 80 80" dur="3s"
+                            repeatCount="indefinite" />
+                    </g>
+
+                    <!-- Ping circle 1 (scale + fade via native SVG) -->
+                    <circle cx="80" cy="80" r="0" fill="none" stroke="rgba(99,102,241,0.5)" stroke-width="2">
+                        <animate attributeName="r" values="0;70" dur="2.5s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.7;0" dur="2.5s" repeatCount="indefinite" />
+                    </circle>
+                    <!-- Ping circle 2 (staggered) -->
+                    <circle cx="80" cy="80" r="0" fill="none" stroke="rgba(99,102,241,0.35)" stroke-width="1.5">
+                        <animate attributeName="r" values="0;70" dur="2.5s" begin="1.25s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.5;0" dur="2.5s" begin="1.25s"
+                            repeatCount="indefinite" />
+                    </circle>
+
+                    <!-- Center dot with glow -->
+                    <circle cx="80" cy="80" r="4" fill="rgb(99,102,241)" />
+                    <circle cx="80" cy="80" r="7" fill="none" stroke="rgba(99,102,241,0.4)" stroke-width="1">
+                        <animate attributeName="r" values="6;9;6" dur="2s" repeatCount="indefinite" />
+                        <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite" />
+                    </circle>
+
+                    <!-- Small blip dots -->
+                    <circle cx="60" cy="45" r="2.5" fill="rgba(99,102,241,0.6)">
+                        <animate attributeName="opacity" values="0;0.8;0" dur="3s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="105" cy="65" r="2" fill="rgba(168,85,247,0.5)">
+                        <animate attributeName="opacity" values="0;0.6;0" dur="3s" begin="1s"
+                            repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="95" cy="110" r="1.8" fill="rgba(59,130,246,0.5)">
+                        <animate attributeName="opacity" values="0;0.7;0" dur="3s" begin="2s"
+                            repeatCount="indefinite" />
+                    </circle>
+                </svg>
+            </div>
+        </div>
+
+        <h2 class="text-2xl font-bold text-slate-800 dark:text-white mb-3">
+            No Campaigns Detected <span class="text-indigo-500">Yet</span>
+        </h2>
+        <p class="text-slate-500 dark:text-slate-400 max-w-lg mx-auto mb-8 leading-relaxed text-sm">
+            PhishGuard's campaign engine clusters emails that share similar subjects, body content,
+            or sender domains using <strong class="text-slate-700 dark:text-slate-300">SimHash fingerprinting</strong>
+            and <strong class="text-slate-700 dark:text-slate-300">Jaccard similarity</strong>.
+            Analyze more emails to start detecting coordinated phishing campaigns.
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <a href="{{ url_for('inbox') }}"
+                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-lg shadow-indigo-600/20 transition-all duration-200 hover:shadow-indigo-600/30 hover:-translate-y-0.5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                Analyze Emails
+            </a>
+            <a href="{{ url_for('history') }}"
+                class="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-white/70 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 text-sm font-semibold transition-all duration-200 hover:bg-slate-50 dark:hover:bg-white/10 hover:-translate-y-0.5">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                View History
+            </a>
+        </div>
+
+        <!-- How it works mini-section -->
+        <div class="mt-14 max-w-2xl mx-auto">
+            <p class="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold mb-5">How
+                Campaign Detection Works</p>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="bg-white/60 dark:bg-white/[0.03] backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/[0.06] p-4 text-center"
+                    style="animation: campaignFadeUp 0.5s ease-out 0.2s both">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
+                        <span class="text-lg">🧬</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">SimHash Fingerprinting</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Locality-sensitive hashing detects similar subjects even with minor variations.
+                    </p>
+                </div>
+                <div class="bg-white/60 dark:bg-white/[0.03] backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/[0.06] p-4 text-center"
+                    style="animation: campaignFadeUp 0.5s ease-out 0.35s both">
+                    <div class="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
+                        <span class="text-lg">📊</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Body Overlap (Jaccard)</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Token-level Jaccard similarity ≥ 0.4 groups emails with shared body content.
+                    </p>
+                </div>
+                <div class="bg-white/60 dark:bg-white/[0.03] backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/[0.06] p-4 text-center"
+                    style="animation: campaignFadeUp 0.5s ease-out 0.5s both">
+                    <div class="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mx-auto mb-3">
+                        <span class="text-lg">🌐</span>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">Domain Clustering</h4>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Shared sender domains boost confidence in campaign grouping.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</section>
+{% endblock %}

@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+{% block title %}Security Training — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-5xl mx-auto space-y-6">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">🎓 Security Training Simulation</h1>
+        <p class="text-slate-600 dark:text-slate-400">
+            Practice identifying phishing emails in a safe, offline environment. No real emails are sent or received.
+        </p>
+    </div>
+
+    {% if result %}
+    <!-- Evaluation Result -->
+    <div class="rounded-2xl p-6 border shadow-sm mb-8
+        {% if result.correct %}bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20
+        {% else %}bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20{% endif %}">
+
+        <div class="flex items-center gap-3 mb-4">
+            <span class="text-3xl">{% if result.correct %}✅{% else %}❌{% endif %}</span>
+            <h2
+                class="text-2xl font-bold {% if result.correct %}text-green-800 dark:text-green-300{% else %}text-red-800 dark:text-red-300{% endif %}">
+                {{ result.feedback }}
+            </h2>
+        </div>
+
+        <div class="flex flex-wrap gap-4 text-sm text-slate-600 dark:text-slate-400 mb-6 font-medium">
+            <span class="bg-white/50 dark:bg-black/20 px-3 py-1 rounded-lg">Scenario: {{ result.scenario_title }}</span>
+            <span class="bg-white/50 dark:bg-black/20 px-3 py-1 rounded-lg">Category: {{ result.category }}</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {% if result.red_flags %}
+            <div class="bg-white/60 dark:bg-black/20 rounded-xl p-5">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span>🚩</span> Red Flags missed
+                </h3>
+                <ul class="space-y-2">
+                    {% for flag in result.red_flags %}
+                    <li class="flex items-start text-slate-700 dark:text-slate-300 text-sm">
+                        <span class="mr-2">•</span> {{ flag }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            {% if result.learning_points %}
+            <div class="bg-white/60 dark:bg-black/20 rounded-xl p-5">
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+                    <span>📚</span> Learning Points
+                </h3>
+                <ul class="space-y-2">
+                    {% for point in result.learning_points %}
+                    <li class="flex items-start text-slate-700 dark:text-slate-300 text-sm">
+                        <span class="mr-2 text-indigo-500">✓</span> {{ point }}
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="mt-4">
+            <a href="{{ url_for('training') }}"
+                class="inline-flex items-center justify-center px-6 py-2.5 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 rounded-lg font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">
+                ← Back to Scenarios
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if scenario and not result %}
+    <!-- Active Scenario -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-2xl p-6 md:p-8 border border-slate-200 dark:border-white/10 shadow-lg">
+        <div class="flex justify-between items-start mb-6">
+            <div class="space-y-1">
+                <div class="flex gap-2 mb-2">
+                    <span class="px-2 py-1 rounded text-xs font-bold uppercase tracking-wide
+                        {% if scenario.difficulty == 'Easy' %}bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300
+                        {% elif scenario.difficulty == 'Medium' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300
+                        {% else %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300{% endif %}">
+                        {{ scenario.difficulty }}
+                    </span>
+                    <span
+                        class="px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded text-xs font-bold uppercase tracking-wide">
+                        {{ scenario.category }}
+                    </span>
+                </div>
+                <h2 class="text-2xl font-bold text-slate-900 dark:text-white">{{ scenario.title }}</h2>
+            </div>
+            <a href="{{ url_for('training') }}"
+                class="text-sm font-medium text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors">
+                Cancel
+            </a>
+        </div>
+
+        <!-- Simulated Email Viewer -->
+        <div
+            class="bg-white dark:bg-slate-900 rounded-lg border border-slate-300 dark:border-slate-700 shadow-inner mb-8 overflow-hidden">
+            <div
+                class="bg-slate-100 dark:bg-slate-800 px-4 py-3 border-b border-slate-200 dark:border-slate-700 space-y-1">
+                <div class="text-sm">
+                    <span
+                        class="font-bold text-slate-500 dark:text-slate-400 w-16 inline-block text-right mr-3">From:</span>
+                    <span
+                        class="text-slate-800 dark:text-slate-200 font-mono text-xs sm:text-sm bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 inline-block">{{
+                        scenario.sender }}</span>
+                </div>
+                <div class="text-sm">
+                    <span
+                        class="font-bold text-slate-500 dark:text-slate-400 w-16 inline-block text-right mr-3">Subject:</span>
+                    <span class="text-slate-900 dark:text-white font-medium">{{ scenario.subject }}</span>
+                </div>
+            </div>
+            <div
+                class="p-6 md:p-8 text-slate-800 dark:text-slate-200 prose dark:prose-invert max-w-none text-sm md:text-base leading-relaxed font-sans">
+                {{ scenario.body_text|replace('\n', '<br>')|safe }}
+            </div>
+        </div>
+
+        <div
+            class="bg-indigo-50 dark:bg-indigo-500/10 rounded-xl p-6 text-center border border-indigo-100 dark:border-indigo-500/20">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6">What risk level would you assign?</h3>
+            <form method="POST" action="{{ url_for('training_scenario', scenario_id=scenario.id) }}">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                    <button type="submit" name="guess" value="Low"
+                        class="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-green-200 dark:border-green-500/30 hover:border-green-500 dark:hover:border-green-400 hover:bg-green-50 dark:hover:bg-green-500/10 transition-all group">
+                        <span class="text-2xl mb-2 grayscale group-hover:grayscale-0 transition-all">🟢</span>
+                        <span
+                            class="font-bold text-slate-700 dark:text-slate-200 group-hover:text-green-700 dark:group-hover:text-green-300">Low
+                            Risk</span>
+                    </button>
+                    <button type="submit" name="guess" value="Medium"
+                        class="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-yellow-200 dark:border-yellow-500/30 hover:border-yellow-500 dark:hover:border-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-500/10 transition-all group">
+                        <span class="text-2xl mb-2 grayscale group-hover:grayscale-0 transition-all">🟠</span>
+                        <span
+                            class="font-bold text-slate-700 dark:text-slate-200 group-hover:text-yellow-700 dark:group-hover:text-yellow-300">Medium
+                            Risk</span>
+                    </button>
+                    <button type="submit" name="guess" value="High"
+                        class="flex flex-col items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-xl border-2 border-red-200 dark:border-red-500/30 hover:border-red-500 dark:hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all group">
+                        <span class="text-2xl mb-2 grayscale group-hover:grayscale-0 transition-all">🔴</span>
+                        <span
+                            class="font-bold text-slate-700 dark:text-slate-200 group-hover:text-red-700 dark:group-hover:text-red-300">High
+                            Risk</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not scenario and not result %}
+    <!-- Scenario List -->
+    {% if stats %}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md p-4 rounded-xl border border-slate-200 dark:border-white/10 text-center">
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ stats.total_scenarios }}</div>
+            <div class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400">Total Scenarios</div>
+        </div>
+        {% for diff, count in stats.by_difficulty.items() %}
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md p-4 rounded-xl border border-slate-200 dark:border-white/10 text-center">
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ count }}</div>
+            <div class="text-xs uppercase font-bold text-slate-500 dark:text-slate-400">{{ diff }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if scenarios %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for s in scenarios %}
+        <a href="{{ url_for('training_scenario', scenario_id=s.id) }}"
+            class="group bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-5 border border-slate-200 dark:border-white/10 shadow-sm hover:shadow-md hover:border-indigo-400 dark:hover:border-indigo-500 hover:-translate-y-1 transition-all flex flex-col h-full">
+            <div class="flex justify-between items-start mb-3">
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide
+                    {% if s.difficulty == 'Easy' %}bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300
+                    {% elif s.difficulty == 'Medium' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300
+                    {% else %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300{% endif %}">
+                    {{ s.difficulty }}
+                </span>
+                <span class="text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500">{{ s.category }}</span>
+            </div>
+
+            <h3
+                class="font-bold text-slate-900 dark:text-white mb-3 line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                {{ s.title }}</h3>
+
+            <div
+                class="mt-auto space-y-2 text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-white/5">
+                <div class="flex">
+                    <span class="font-semibold w-12 shrink-0">From:</span>
+                    <span class="truncate font-mono">{{ s.sender }}</span>
+                </div>
+                <div class="flex">
+                    <span class="font-semibold w-12 shrink-0">Subject:</span>
+                    <span class="truncate italic">{{ s.subject }}</span>
+                </div>
+            </div>
+
+            <div
+                class="mt-4 flex items-center justify-end text-sm font-bold text-indigo-600 dark:text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-[-10px] group-hover:translate-x-0 transition-transform">
+                Start Simulation →
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div
+        class="text-center py-20 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div class="text-6xl mb-4 grayscale opacity-50">🎓</div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">Training Module Unavailable</h2>
+        <p class="text-slate-600 dark:text-slate-400 max-w-md mx-auto">The training simulation module could not be
+            loaded at this time.</p>
+    </div>
+    {% endif %}
+    {% endif %}
+</section>
+{% endblock %}

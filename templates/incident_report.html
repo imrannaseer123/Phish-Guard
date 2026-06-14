@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}Incident Report — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto space-y-6">
+
+    {% if error %}
+    <!-- Error State -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-8 border border-slate-200 dark:border-white/10 shadow-sm text-center">
+        <span class="text-5xl">📋</span>
+        <h2 class="text-lg font-bold text-slate-900 dark:text-white mt-3">No Incident Report</h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mt-2">{{ error }}</p>
+        <a href="{{ url_for('history') }}"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors">
+            ← Back to History
+        </a>
+    </div>
+
+    {% elif report %}
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            📋 Incident Report
+            <span
+                class="text-xs font-medium px-3 py-1 rounded-full bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/20 uppercase tracking-wider">
+                {{ report.severity }}
+            </span>
+        </h1>
+        <a href="{{ url_for('ascend.incident_export', message_id=report.email.message_id) }}"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-slate-100 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors"
+            download>
+            📄 Export as Text
+        </a>
+    </div>
+    <div class="text-xs text-slate-500 dark:text-slate-400 -mt-4">
+        {{ report.report_id }} · {{ report.timestamp }}
+    </div>
+
+    <!-- Executive Summary -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-2 uppercase tracking-wider">Executive Summary
+        </h2>
+        <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{{ report.executive_summary }}</p>
+    </div>
+
+    <!-- Email Details -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3 uppercase tracking-wider">Email Details</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Subject</div>
+                <div class="text-sm font-medium text-slate-900 dark:text-white mt-0.5">{{ report.email.subject }}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Sender</div>
+                <div class="text-sm font-medium text-slate-900 dark:text-white mt-0.5">{{ report.email.sender }}</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Risk Score</div>
+                <div class="text-sm font-bold text-red-500 mt-0.5">{{ report.risk_score|int }} / 100</div>
+            </div>
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Intent Classification</div>
+                <div class="text-sm font-medium text-slate-900 dark:text-white mt-0.5">{{ report.intent }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Evidence Catalogue -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3 uppercase tracking-wider">
+            Evidence ({{ report.evidence|length }} indicators)
+        </h2>
+        <div class="space-y-3">
+            {% for e in report.evidence %}
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
+                        [{{ e.category }}] {{ e.indicator|replace("_", " ") }}
+                    </span>
+                    <span class="text-xs font-bold text-red-500 bg-red-500/10 px-2 py-0.5 rounded">
+                        +{{ e.severity_contribution|round(1) }} pts
+                    </span>
+                </div>
+                {% if e.evidence %}
+                <p class="text-xs text-slate-600 dark:text-slate-400">{{ e.evidence }}</p>
+                {% endif %}
+                {% if e.description %}
+                <p class="text-[10px] text-slate-500 dark:text-slate-500 mt-1">{{ e.description }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Threat Chains -->
+    {% if report.threat_chains %}
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3 uppercase tracking-wider">
+            Threat Chains ({{ report.threat_chains|length }})
+        </h2>
+        <div class="space-y-2">
+            {% for c in report.threat_chains %}
+            <div
+                class="flex items-center gap-2 text-xs p-2 rounded-lg bg-gradient-to-r from-blue-50/50 via-amber-50/50 to-red-50/50 dark:from-blue-500/5 dark:via-amber-500/5 dark:to-red-500/5 border border-slate-100 dark:border-white/5">
+                <span class="font-semibold text-blue-600 dark:text-blue-400">{{ c.evidence|replace("_", " ")|title
+                    }}</span>
+                <span class="text-slate-400">→</span>
+                <span class="font-semibold text-amber-600 dark:text-amber-400">{{ c.intent }}</span>
+                <span class="text-slate-400">→</span>
+                <span class="font-semibold text-red-600 dark:text-red-400">{{ c.impact }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Mitigations -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3 uppercase tracking-wider">
+            Recommended Mitigations
+        </h2>
+        <ul class="space-y-2">
+            {% for m in report.mitigations %}
+            <li class="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <span class="text-emerald-500 mt-0.5">✓</span>
+                {{ m }}
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Disclaimer -->
+    <div
+        class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4 text-center">
+        <p class="text-xs text-amber-700 dark:text-amber-400">
+            {{ report.disclaimer }}
+        </p>
+        <p class="text-[10px] text-amber-600 dark:text-amber-500 mt-1">
+            Status: {{ report.status }}
+        </p>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

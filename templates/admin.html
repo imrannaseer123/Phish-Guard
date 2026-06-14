@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Weight Advisor — PhishGuard Admin{% endblock %}
+
+{% block content %}
+<section class="page-section">
+    <div class="page-header">
+        <h1 class="page-title">⚖️ Adaptive Weight Advisor</h1>
+        <p class="page-subtitle">Suggested analyzer weight adjustments based on user feedback — read-only, never
+            auto-applied</p>
+    </div>
+
+    <!-- Feedback Statistics -->
+    {% if feedback_stats %}
+    <div class="admin-stats-grid">
+        <div class="glass-card stat-card-mini">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value">{{ feedback_stats.get('total', 0) }}</div>
+            <div class="stat-label">Total Feedback</div>
+        </div>
+        <div class="glass-card stat-card-mini">
+            <div class="stat-icon">🚨</div>
+            <div class="stat-value">{{ feedback_stats.get('marked_phishing', 0) }}</div>
+            <div class="stat-label">Marked Phishing</div>
+        </div>
+        <div class="glass-card stat-card-mini">
+            <div class="stat-icon">✅</div>
+            <div class="stat-value">{{ feedback_stats.get('marked_safe', 0) }}</div>
+            <div class="stat-label">Marked Safe</div>
+        </div>
+        <div class="glass-card stat-card-mini">
+            <div class="stat-icon">❌</div>
+            <div class="stat-value">{{ feedback_stats.get('false_negatives', 0) }}</div>
+            <div class="stat-label">Missed (False Neg)</div>
+        </div>
+        <div class="glass-card stat-card-mini">
+            <div class="stat-icon">⚠️</div>
+            <div class="stat-value">{{ feedback_stats.get('false_positives', 0) }}</div>
+            <div class="stat-label">Over-flagged (False Pos)</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Weight Suggestions Table -->
+    {% if suggestions and not suggestions.get('error') %}
+    <div class="glass-card">
+        <h2 class="card-title">📐 Weight Comparison</h2>
+        <p class="card-subtitle">
+            Confidence: <span class="confidence-badge confidence-{{ suggestions.get('confidence', 'low') }}">
+                {{ suggestions.get('confidence', 'low') | upper }}
+            </span>
+            — Based on {{ suggestions.get('total_feedback', 0) }} feedback entries
+        </p>
+
+        <div class="weights-table-wrapper">
+            <table class="weights-table">
+                <thead>
+                    <tr>
+                        <th>Analyzer</th>
+                        <th>Current Weight</th>
+                        <th>Suggested Weight</th>
+                        <th>Change</th>
+                        <th>Explanation</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for analyzer, current in suggestions.get('current_weights', {}).items() %}
+                    {% set suggested = suggestions.get('suggested_weights', {}).get(analyzer, current) %}
+                    {% set diff = suggested - current %}
+                    <tr>
+                        <td class="analyzer-name">
+                            {% if analyzer == "keyword" %}🔤 Keywords
+                            {% elif analyzer == "url" %}🔗 URLs
+                            {% elif analyzer == "sender" %}👤 Sender
+                            {% elif analyzer == "urgency" %}⏰ Urgency
+                            {% elif analyzer == "structure" %}📝 Structure
+                            {% endif %}
+                        </td>
+                        <td class="weight-current">{{ current }}</td>
+                        <td class="weight-suggested">{{ suggested }}</td>
+                        <td>
+                            {% if diff > 0 %}
+                            <span class="weight-change weight-increase">▲ +{{ diff }}</span>
+                            {% elif diff < 0 %} <span class="weight-change weight-decrease">▼ {{ diff }}</span>
+                                {% else %}
+                                <span class="weight-change weight-same">— 0</span>
+                                {% endif %}
+                        </td>
+                        <td class="weight-explanation">
+                            {{ suggestions.get('explanations', {}).get(analyzer, 'No data') }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if suggestions.get('confidence') == 'low' %}
+        <div class="admin-notice">
+            <p>💡 <strong>Low confidence:</strong> Collect more user feedback to get meaningful weight suggestions.
+                At least 5 feedback entries are needed for medium confidence, and 20+ for high confidence.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Explainability Notice -->
+    <div class="glass-card">
+        <h2 class="card-title">ℹ️ How It Works</h2>
+        <div class="admin-info-grid">
+            <div class="info-item">
+                <h3>📈 False Negatives</h3>
+                <p>When the system says "Low Risk" but the user marks it as phishing, the responsible analyzers may need
+                    <strong>higher weights</strong> to catch similar cases.
+                </p>
+            </div>
+            <div class="info-item">
+                <h3>📉 False Positives</h3>
+                <p>When the system says "High Risk" but the user marks it as safe, the over-contributing analyzers may
+                    need <strong>lower weights</strong>.</p>
+            </div>
+            <div class="info-item">
+                <h3>🔒 Read-Only</h3>
+                <p>These suggestions are <strong>never auto-applied</strong>. They serve as informed recommendations for
+                    manual tuning by the administrator.</p>
+            </div>
+            <div class="info-item">
+                <h3>🧠 Explainable</h3>
+                <p>Every suggestion includes a rationale showing the number of mismatches and average analyzer
+                    contributions, maintaining full transparency.</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">⚖️</div>
+        <h2>No Suggestions Available</h2>
+        <p>{{ suggestions.get('error', 'Start analyzing emails and providing feedback to generate weight suggestions.')
+            }}</p>
+        <a href="{{ url_for('inbox') }}" class="btn btn-primary">Go to Inbox</a>
+    </div>
+    {% endif %}
+
+</section>
+{% endblock %}

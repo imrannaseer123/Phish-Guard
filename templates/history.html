@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% block title %}Analysis History — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto">
+    <div class="mb-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">📊 Analysis History</h1>
+            <p class="text-slate-600 dark:text-slate-400">Past email analyses and their risk assessments</p>
+        </div>
+        {% if logs %}
+        <button onclick="clearHistory()"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-red-200 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors shadow-sm"
+            title="Clear all analysis history">
+            🗑️ Clear History
+        </button>
+        {% endif %}
+    </div>
+
+    {% if logs %}
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm" id="history-table">
+                <thead>
+                    <tr class="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-white/10">
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            onclick="sortTable(0)">#</th>
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            onclick="sortTable(1)">Date</th>
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            onclick="sortTable(2)">Sender</th>
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            onclick="sortTable(3)">Subject</th>
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-center"
+                            onclick="sortTable(4)">Score</th>
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-center"
+                            onclick="sortTable(5)">Level</th>
+                        <th class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            onclick="sortTable(6)">Intent</th>
+                        <th
+                            class="px-6 py-4 font-semibold text-slate-900 dark:text-white uppercase tracking-wider text-xs">
+                            Feedback</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-white/5">
+                    {% for log in logs %}
+                    <tr class="animate-row-in hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group"
+                        style="--row-delay: {{ loop.index0 * 40 }}ms">
+                        <td class="px-6 py-4 text-slate-500 dark:text-slate-400 font-mono text-xs">{{ log.id }}</td>
+                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">{{ log.timestamp[:19]
+                            }}</td>
+                        <td class="px-6 py-4 text-slate-900 dark:text-white font-medium max-w-[200px] truncate"
+                            title="{{ log.sender }}">{{ log.sender }}</td>
+                        <td class="px-6 py-4 text-slate-600 dark:text-slate-300 max-w-[300px] truncate"
+                            title="{{ log.subject }}">
+                            <a href="{{ url_for('analyze', message_id=log.message_id) }}"
+                                class="hover:text-indigo-500 hover:underline">
+                                {{ log.subject }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span
+                                class="inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm
+                                {% if log.risk_level == 'High' %}bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-400
+                                {% elif log.risk_level == 'Medium' %}bg-yellow-100 text-yellow-700 dark:bg-yellow-500/10 dark:text-yellow-400
+                                {% else %}bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400{% endif %}">
+                                {{ log.risk_score | round(0) | int }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <span
+                                class="inline-flex px-2 py-1 rounded text-xs font-bold uppercase
+                                {% if log.risk_level == 'High' %}text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-500/10
+                                {% elif log.risk_level == 'Medium' %}text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-500/10
+                                {% else %}text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-500/10{% endif %}">
+                                {{ log.risk_level }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                                {%- if log.intent == "Credential Harvesting" -%}🔑
+                                {%- elif log.intent == "Financial Fraud" -%}💰
+                                {%- elif log.intent == "Malware Delivery" -%}🦠
+                                {%- elif log.intent == "Identity Theft" -%}🪪
+                                {%- else -%}✅{%- endif %} {{ log.intent }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center gap-1 opacity-50 group-hover:opacity-100 transition-opacity">
+                                <button
+                                    onclick="submitHistoryFeedback(this, '{{ log.message_id }}', 'phishing', {{ log.risk_score|default(0) }}, '{{ log.risk_level }}')"
+                                    title="Mark as Phishing"
+                                    class="p-1 rounded hover:bg-red-100 dark:hover:bg-red-500/20 text-slate-400 hover:text-red-500 transition-colors">
+                                    🚨
+                                </button>
+                                <button
+                                    onclick="submitHistoryFeedback(this, '{{ log.message_id }}', 'safe', {{ log.risk_score|default(0) }}, '{{ log.risk_level }}')"
+                                    title="Mark as Safe"
+                                    class="p-1 rounded hover:bg-green-100 dark:hover:bg-green-500/20 text-slate-400 hover:text-green-500 transition-colors">
+                                    ✅
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div
+        class="text-center py-20 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div class="text-6xl mb-4 grayscale opacity-50">📋</div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">No analyses yet</h2>
+        <p class="text-slate-600 dark:text-slate-400 max-w-sm mx-auto mb-6">Analyze some emails from your inbox to see
+            the history here.</p>
+        <a href="{{ url_for('inbox') }}"
+            class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+            Go to Inbox
+        </a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function clearHistory() {
+        if (!confirm('Are you sure you want to clear ALL analysis history and feedback? This action cannot be undone.')) {
+            return;
+        }
+
+        fetch('/history/clear', { method: 'POST' })
+            .then(function (r) {
+                if (!r.ok) throw new Error('Server error ' + r.status);
+                return r.json();
+            })
+            .then(function (data) {
+                if (data.success) {
+                    if (typeof window.showToast === 'function') {
+                        window.showToast('History cleared successfully', 'success');
+                    }
+                    // Animate out the table, then reload
+                    var tableEl = document.querySelector('.overflow-x-auto');
+                    if (tableEl) {
+                        tableEl.style.transition = 'opacity 0.4s, transform 0.4s';
+                        tableEl.style.opacity = '0';
+                        tableEl.style.transform = 'scale(0.98)';
+                    }
+                    setTimeout(function () { window.location.reload(); }, 600);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(function (err) {
+                alert('Failed to clear history: ' + err.message);
+            });
+    }
+
+    function sortTable(columnIndex) {
+        var table = document.getElementById("history-table");
+        var tbody = table.tBodies[0];
+        var rows = Array.from(tbody.rows);
+        var isNumeric = columnIndex === 0 || columnIndex === 4;
+
+        var currentDir = table.getAttribute("data-sort-dir") === "asc" ? "desc" : "asc";
+        table.setAttribute("data-sort-dir", currentDir);
+
+        rows.sort(function (a, b) {
+            var aVal = a.cells[columnIndex].textContent.trim();
+            var bVal = b.cells[columnIndex].textContent.trim();
+            if (isNumeric) {
+                aVal = parseFloat(aVal) || 0;
+                bVal = parseFloat(bVal) || 0;
+            }
+            if (currentDir === "asc") return aVal > bVal ? 1 : -1;
+            return aVal < bVal ? 1 : -1;
+        });
+
+        rows.forEach(function (row) { tbody.appendChild(row); });
+    }
+
+    function submitHistoryFeedback(btn, messageId, feedbackType, score, level) {
+        try {
+            console.log('submitHistoryFeedback called:', messageId, feedbackType, score, level);
+
+            // Disable buttons immediately to prevent double-submit
+            var container = btn.closest('div');
+            var buttons = container.querySelectorAll('button');
+            buttons.forEach(function (b) { b.disabled = true; });
+
+            // Show submitting state
+            var originalHTML = container.innerHTML;
+            container.innerHTML = '<span class="text-xs text-slate-500 animate-pulse">Submitting...</span>';
+
+            fetch('/feedback/' + messageId, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    feedback: feedbackType,
+                    original_score: score,
+                    original_level: level
+                })
+            })
+                .then(function (r) {
+                    console.log('Feedback response status:', r.status);
+                    if (!r.ok) throw new Error('Server error ' + r.status);
+                    return r.json();
+                })
+                .then(function (data) {
+                    console.log('Feedback response data:', data);
+                    if (data.success) {
+                        // visual update - show feedback label
+                        var labelClass = feedbackType === 'phishing' ? 'text-red-500' : 'text-green-500';
+                        var labelText = feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1);
+                        container.innerHTML = '<span class="text-xs font-bold ' + labelClass + '">Marked ' + labelText + '</span>';
+
+                        // Trigger Toast
+                        var toastMsg = 'Feedback submitted: Marked as ' + labelText;
+                        if (typeof window.showToast === 'function') {
+                            window.showToast(toastMsg, 'success');
+                        } else {
+                            alert(toastMsg);
+                        }
+                    } else {
+                        // Error from server
+                        var errMsg = 'Error: ' + (data.error || 'Unknown error');
+                        if (typeof window.showToast === 'function') {
+                            window.showToast(errMsg, 'error');
+                        } else {
+                            alert(errMsg);
+                        }
+                        container.innerHTML = originalHTML;
+                    }
+                })
+                .catch(function (err) {
+                    console.error('Feedback error:', err);
+                    alert('Feedback failed: ' + err.message);
+                    container.innerHTML = originalHTML;
+                });
+        } catch (e) {
+            alert('Error initiating feedback: ' + e.message);
+            console.error(e);
+        }
+    }
+</script>
+{% endblock %}

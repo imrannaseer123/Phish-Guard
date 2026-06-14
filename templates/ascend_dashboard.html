@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+{% block title %}ascend Dashboard — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-2">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            🔬 ascend Framework
+            <span
+                class="text-xs font-medium px-3 py-1 rounded-full bg-violet-100 dark:bg-violet-500/10 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-500/20">
+                Add-on Layer
+            </span>
+        </h1>
+    </div>
+    <p class="text-sm text-slate-600 dark:text-slate-400 -mt-4">
+        Explainable security enhancement modules — all analysis is read-only and advisory.
+    </p>
+
+    <!-- Module Status Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {% set modules = [
+        ("🔄 Counterfactual", module_status.counterfactual, "Reasoning"),
+        ("🧬 Ontology", module_status.threat_ontology, "Threat Chains"),
+        ("📊 Forecast", module_status.risk_forecast, "Risk Profile"),
+        ("🧠 Psych", module_status.psych_analyzer, "Manipulation"),
+        ("🔁 Feedback", module_status.rule_feedback, "Rule Tuning"),
+        ("📋 Incident", module_status.incident_reporter, "Report Gen"),
+        ("🎛️ What-If", module_status.whatif_sandbox, "Sandbox"),
+        ] %}
+        {% for name, status, desc in modules %}
+        <div class="p-3 rounded-lg border transition-all
+            {% if status %}bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20
+            {% else %}bg-slate-50 dark:bg-white/5 border-slate-200 dark:border-white/10{% endif %}">
+            <div class="flex items-center gap-2">
+                <span
+                    class="w-2 h-2 rounded-full {% if status %}bg-emerald-500{% else %}bg-slate-400{% endif %}"></span>
+                <span class="text-xs font-bold text-slate-900 dark:text-white">{{ name }}</span>
+            </div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">{{ desc }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Risk Forecast Section -->
+    {% if forecast and forecast.vulnerability_level != 'Unknown' %}
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            📊 Human Risk Forecast
+            <span
+                class="text-xs font-medium px-2 py-0.5 rounded-full
+                {% if forecast.vulnerability_level == 'High' %}bg-red-100 dark:bg-red-500/10 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-500/20
+                {% elif forecast.vulnerability_level == 'Medium' %}bg-yellow-100 dark:bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-500/20
+                {% else %}bg-green-100 dark:bg-green-500/10 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-500/20{% endif %}">
+                {{ forecast.vulnerability_level }} Vulnerability
+            </span>
+        </h2>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div
+                class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 text-center">
+                <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ forecast.stats.total_analyses }}</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Analyses
+                </div>
+            </div>
+            <div
+                class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 text-center">
+                <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ forecast.stats.avg_risk_score }}</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg Risk Score
+                </div>
+            </div>
+            <div
+                class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 text-center">
+                <div class="text-2xl font-bold text-red-500">{{ forecast.stats.high_risk_count }}</div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">High-Risk Emails
+                </div>
+            </div>
+            <div
+                class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 text-center">
+                <div class="text-2xl font-bold text-slate-900 dark:text-white flex items-center justify-center gap-1">
+                    {% if forecast.trend_direction == 'rising' %}📈
+                    {% elif forecast.trend_direction == 'falling' %}📉
+                    {% else %}➡️{% endif %}
+                    {{ forecast.trend_direction|title }}
+                </div>
+                <div class="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider">Risk Trend</div>
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            {{ forecast.confidence_explanation }}
+        </p>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-2 italic">
+            ⚠️ This forecast is read-only and advisory. It does not affect email analysis or risk scoring.
+        </p>
+    </div>
+    {% elif forecast %}
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm text-center">
+        <span class="text-4xl">📊</span>
+        <p class="text-slate-600 dark:text-slate-400 mt-2">{{ forecast.confidence_explanation }}</p>
+        <p class="text-xs text-slate-500 dark:text-slate-500 mt-1">Analyze some emails to generate your risk forecast.
+        </p>
+    </div>
+    {% endif %}
+
+    <!-- Rule Feedback Suggestions -->
+    {% if feedback_suggestions and feedback_suggestions.total_feedback > 0 %}
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            🔁 Adaptive Rule Feedback
+        </h2>
+        <p class="text-sm text-slate-600 dark:text-slate-400 mb-4">{{ feedback_suggestions.summary }}</p>
+
+        {% if feedback_suggestions.suggestions %}
+        <div class="space-y-3">
+            {% for s in feedback_suggestions.suggestions %}
+            <div class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">
+                <div class="flex items-center justify-between mb-1">
+                    <span class="text-sm font-bold text-slate-800 dark:text-slate-200">
+                        {{ s.analyzer|title }}
+                    </span>
+                    <span class="text-xs font-medium px-2 py-0.5 rounded-full
+                        {% if s.direction == 'decrease' %}bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-400
+                        {% else %}bg-green-100 dark:bg-green-500/10 text-green-600 dark:text-green-400{% endif %}">
+                        {{ s.current_weight }} → {{ s.suggested_weight }}
+                    </span>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-slate-400">{{ s.reason }}</p>
+                <span class="text-[10px] text-slate-400 dark:text-slate-500">
+                    Confidence: {{ s.confidence }}
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-3 italic">
+            ⚠️ These are suggestions only — rule weights are NOT auto-modified.
+        </p>
+        {% else %}
+        <p class="text-xs text-slate-500 dark:text-slate-400">
+            No adjustment suggestions yet. More feedback data is needed.
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Quick Links -->
+    <div class="flex flex-wrap gap-3">
+        <a href="{{ url_for('ascend.whatif_page') }}"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors">
+            🎛️ What-If Learning Mode
+        </a>
+        <a href="{{ url_for('inbox') }}"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+            📧 Analyze Emails
+        </a>
+        <a href="{{ url_for('history') }}"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors">
+            📜 Analysis History
+        </a>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% block title %}What-If Sandbox — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-5xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+            🎛️ What-If Learning Mode
+        </h1>
+        <a href="{{ url_for('ascend.dashboard') }}"
+            class="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition-colors">
+            ← Back to ascend
+        </a>
+    </div>
+
+    <!-- Educational Simulation Banner -->
+    <div
+        class="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4 flex items-start gap-3">
+        <span class="text-2xl">🎓</span>
+        <div>
+            <h3 class="text-sm font-bold text-amber-800 dark:text-amber-300">Educational Simulation</h3>
+            <p class="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                This sandbox lets you experiment with rule weights to understand how each analyzer contributes
+                to the risk score. <strong>No changes are saved</strong> — all simulations are in-memory only.
+                The core detection engine is NEVER modified.
+            </p>
+        </div>
+    </div>
+
+    <!-- Analysis Selector -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-3">Select Analysis</h2>
+        {% if recent_analyses %}
+        <select id="analysis-select" onchange="loadAnalysis()"
+            class="w-full p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500">
+            <option value="">— Select a past analysis —</option>
+            {% for a in recent_analyses %}
+            <option value="{{ a.id }}" data-score="{{ a.risk_score }}" data-level="{{ a.risk_level }}">
+                {{ a.subject[:60] }} (Score: {{ a.risk_score|int }}, {{ a.risk_level }})
+            </option>
+            {% endfor %}
+        </select>
+        {% else %}
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            No analyses available. <a href="{{ url_for('inbox') }}" class="text-indigo-500 hover:underline">Analyze some
+                emails</a> first.
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- Weight Sliders -->
+    <div id="sliders-section"
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm hidden">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-bold text-slate-900 dark:text-white">Adjust Rule Weights</h2>
+            <button onclick="resetWeights()"
+                class="text-xs px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                Reset to Defaults
+            </button>
+        </div>
+
+        <div class="space-y-4" id="weight-sliders">
+            {% for key, value in default_weights.items() %}
+            <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {{ key|replace("_", " ")|title }}
+                    </label>
+                    <span id="val-{{ key }}"
+                        class="text-xs font-bold text-indigo-600 dark:text-indigo-400 tabular-nums">
+                        {{ value }}
+                    </span>
+                </div>
+                <input type="range" id="weight-{{ key }}" min="0" max="50" value="{{ value }}" data-key="{{ key }}"
+                    data-default="{{ value }}" class="w-full h-2 rounded-full appearance-none cursor-pointer
+                        bg-slate-200 dark:bg-slate-700
+                        accent-indigo-500
+                        [&::-webkit-slider-thumb]:appearance-none
+                        [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4
+                        [&::-webkit-slider-thumb]:rounded-full
+                        [&::-webkit-slider-thumb]:bg-indigo-500" oninput="updateSliderValue(this)">
+            </div>
+            {% endfor %}
+        </div>
+
+        <button onclick="runSimulation()"
+            class="mt-6 w-full py-3 rounded-lg text-sm font-bold bg-indigo-500 text-white hover:bg-indigo-600 transition-colors shadow-lg shadow-indigo-500/20">
+            🔬 Run Simulation
+        </button>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section"
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm hidden">
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+            📊 Simulation Results
+            <span
+                class="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-500/20">
+                Educational Only
+            </span>
+        </h2>
+
+        <div class="grid grid-cols-3 gap-4 mb-4">
+            <div
+                class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 text-center">
+                <div id="res-original" class="text-2xl font-bold text-slate-900 dark:text-white">—</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Original Score</div>
+            </div>
+            <div
+                class="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-500/5 border border-indigo-200 dark:border-indigo-500/20 text-center">
+                <div id="res-simulated" class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">—</div>
+                <div class="text-[10px] text-indigo-500 uppercase tracking-wider">Simulated Score</div>
+            </div>
+            <div
+                class="p-3 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5 text-center">
+                <div id="res-delta" class="text-2xl font-bold">—</div>
+                <div class="text-[10px] text-slate-500 uppercase tracking-wider">Difference</div>
+            </div>
+        </div>
+
+        <p id="res-explanation" class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4"></p>
+
+        <!-- Analyzer Breakdown -->
+        <div id="res-breakdown" class="space-y-2"></div>
+    </div>
+</section>
+
+<script>
+    var defaultWeights = {{ default_weights | tojson }};
+
+    function loadAnalysis() {
+        var select = document.getElementById('analysis-select');
+        var section = document.getElementById('sliders-section');
+        if (select.value) {
+            section.classList.remove('hidden');
+            document.getElementById('results-section').classList.add('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+    }
+
+    function updateSliderValue(slider) {
+        document.getElementById('val-' + slider.dataset.key).textContent = slider.value;
+    }
+
+    function resetWeights() {
+        var sliders = document.querySelectorAll('#weight-sliders input[type=range]');
+        sliders.forEach(function (s) {
+            s.value = s.dataset.default;
+            document.getElementById('val-' + s.dataset.key).textContent = s.dataset.default;
+        });
+    }
+
+    function runSimulation() {
+        var select = document.getElementById('analysis-select');
+        var logId = select.value;
+        if (!logId) return;
+
+        var weights = {};
+        var sliders = document.querySelectorAll('#weight-sliders input[type=range]');
+        sliders.forEach(function (s) {
+            weights[s.dataset.key] = parseInt(s.value);
+        });
+
+        fetch('/ascend/whatif/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ log_id: logId, weights: weights })
+        })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+
+                var results = document.getElementById('results-section');
+                results.classList.remove('hidden');
+
+                document.getElementById('res-original').textContent = Math.round(data.original_score);
+                document.getElementById('res-simulated').textContent = Math.round(data.simulated_score);
+
+                var deltaEl = document.getElementById('res-delta');
+                var delta = data.delta;
+                deltaEl.textContent = (delta >= 0 ? '+' : '') + delta.toFixed(1);
+                deltaEl.className = 'text-2xl font-bold ' + (delta > 0 ? 'text-red-500' : delta < 0 ? 'text-green-500' : 'text-slate-500 dark:text-slate-400');
+
+                document.getElementById('res-explanation').textContent = data.explanation;
+
+                var breakdown = document.getElementById('res-breakdown');
+                breakdown.innerHTML = '';
+                for (var cat in data.analyzer_breakdown) {
+                    var bd = data.analyzer_breakdown[cat];
+                    var diff = bd.simulated_contribution - bd.original_contribution;
+                    var diffStr = (diff >= 0 ? '+' : '') + diff.toFixed(1);
+                    var diffColor = diff > 0 ? 'text-red-500' : diff < 0 ? 'text-green-500' : 'text-slate-400';
+
+                    breakdown.innerHTML += '<div class="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/5">' +
+                        '<span class="text-xs font-medium text-slate-700 dark:text-slate-300">' + cat.replace('_', ' ') + '</span>' +
+                        '<div class="flex items-center gap-3">' +
+                        '<span class="text-xs text-slate-500">' + bd.original_contribution.toFixed(1) + ' → ' + bd.simulated_contribution.toFixed(1) + '</span>' +
+                        '<span class="text-xs font-bold ' + diffColor + '">' + diffStr + '</span>' +
+                        '</div></div>';
+                }
+            })
+            .catch(function (e) {
+                alert('Simulation failed: ' + e.message);
+            });
+    }
+</script>
+{% endblock %}

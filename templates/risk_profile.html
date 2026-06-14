@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Risk Profile — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto space-y-8">
+    <div class="mb-4">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">👤 User Risk Profile</h1>
+        <p class="text-slate-600 dark:text-slate-400">
+            Your personal email threat exposure analysis over the past {{ profile.period_days|default(30) }} days.
+            Read-only analytics — no automated actions.
+        </p>
+    </div>
+
+    {% if profile and profile.total_emails_analyzed is defined %}
+
+    <!-- Exposure Score -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-2xl p-8 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center relative overflow-hidden">
+        <div
+            class="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50 dark:to-slate-900/50 pointer-events-none">
+        </div>
+        <div class="relative z-10">
+            <h3 class="text-lg font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-6">Exposure
+                Score</h3>
+
+            <div class="flex items-center justify-center mb-6">
+                <div
+                    class="w-40 h-40 rounded-full border-8 flex items-center justify-center relative
+                    {% if profile.exposure_label == 'High' %}border-red-500 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400
+                    {% elif profile.exposure_label == 'Medium' %}border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400
+                    {% else %}border-green-500 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400{% endif %}">
+                    <div class="text-center">
+                        <span class="text-5xl font-bold block">{{ profile.exposure_score }}</span>
+                        <span class="text-sm font-medium opacity-70">/100</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="space-y-2">
+                <span class="inline-block px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wide
+                    {% if profile.exposure_label == 'High' %}bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300
+                    {% elif profile.exposure_label == 'Medium' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-500/20 dark:text-yellow-300
+                    {% else %}bg-green-100 text-green-800 dark:bg-green-500/20 dark:text-green-300{% endif %}">
+                    {{ profile.exposure_label }} Exposure
+                </span>
+                <p class="text-slate-600 dark:text-slate-300 max-w-lg mx-auto">{{ profile.summary }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-3xl mb-2">📊</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ profile.total_emails_analyzed }}</div>
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-1">Emails
+                Analyzed</div>
+        </div>
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-3xl mb-2">🔴</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ profile.risk_distribution.get('High', 0)
+                }}</div>
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-1">High Risk
+            </div>
+        </div>
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-3xl mb-2">🟠</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ profile.risk_distribution.get('Medium', 0)
+                }}</div>
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-1">Medium Risk
+            </div>
+        </div>
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-3xl mb-2">🟢</div>
+            <div class="text-2xl font-bold text-slate-900 dark:text-white">{{ profile.risk_distribution.get('Low', 0) }}
+            </div>
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide mt-1">Low Risk
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Frequency -->
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <span>📈</span> Weekly Risk Frequency
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
+                <span class="text-slate-700 dark:text-slate-300 font-medium">High-risk emails per week:</span>
+                <span class="text-2xl font-bold text-red-600 dark:text-red-400">{{ profile.risk_frequency.high_per_week
+                    }}</span>
+            </div>
+            <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/30 rounded-lg">
+                <span class="text-slate-700 dark:text-slate-300 font-medium">Medium-risk emails per week:</span>
+                <span class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{
+                    profile.risk_frequency.medium_per_week }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Top Intents -->
+        {% if profile.top_intents %}
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <span>🎯</span> Most Common Attack Types
+            </h3>
+            <div class="space-y-4">
+                {% for item in profile.top_intents %}
+                <div class="space-y-1">
+                    <div class="flex justify-between text-sm font-medium">
+                        <span class="text-slate-700 dark:text-slate-300">{{ item.intent }}</span>
+                        <span class="text-slate-500 dark:text-slate-400">{{ item.pct }}%</span>
+                    </div>
+                    <div class="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div class="h-full bg-indigo-500 rounded-full" style="width: {{ item.pct }}%"></div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Top Risky Senders -->
+        {% if profile.top_risky_senders %}
+        <div
+            class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden">
+            <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <span>⚠️</span> Top Risky Senders
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                        <tr class="border-b border-slate-200 dark:border-slate-700">
+                            <th class="pb-2 font-semibold text-slate-500 dark:text-slate-400">Sender</th>
+                            <th class="pb-2 font-semibold text-slate-500 dark:text-slate-400 text-center">Count</th>
+                            <th class="pb-2 font-semibold text-slate-500 dark:text-slate-400 text-right">Avg Score</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                        {% for s in profile.top_risky_senders %}
+                        <tr>
+                            <td class="py-3 text-slate-700 dark:text-slate-300 max-w-[150px] truncate"
+                                title="{{ s.sender }}">{{ s.sender }}</td>
+                            <td class="py-3 text-center text-slate-600 dark:text-slate-400">{{ s.count }}</td>
+                            <td class="py-3 text-right">
+                                <span
+                                    class="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold
+                                    {% if s.avg_score >= 67 %}bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-300
+                                    {% elif s.avg_score >= 34 %}bg-yellow-100 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300
+                                    {% else %}bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300{% endif %}">
+                                    {{ s.avg_score }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Common Indicators -->
+    {% if profile.most_common_indicators %}
+    <div
+        class="bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+            <span>🔍</span> Most Triggered Detection Rules
+        </h3>
+        <div class="flex flex-wrap gap-3">
+            {% for ind in profile.most_common_indicators %}
+            <span
+                class="inline-flex items-center px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/30 text-slate-700 dark:text-slate-300 text-sm">
+                {{ ind.indicator|replace('_', ' ')|title }}
+                <span
+                    class="ml-2 px-1.5 py-0.5 rounded-md bg-slate-200 dark:bg-slate-600 text-xs font-bold text-slate-600 dark:text-slate-300">×{{
+                    ind.count }}</span>
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Empty State -->
+    <div
+        class="text-center py-20 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div class="text-6xl mb-4 grayscale opacity-50">📊</div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">No Analysis Data Available</h2>
+        <p class="text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-6">Analyze emails from your inbox to build your
+            risk profile and see insights here.</p>
+        <a href="{{ url_for('inbox') }}"
+            class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+            Go to Inbox
+        </a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}

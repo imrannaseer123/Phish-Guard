@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}Security Dashboard — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-7xl mx-auto space-y-8">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">📈 Weekly Security Dashboard</h1>
+            <p class="text-slate-600 dark:text-slate-400">Security overview for the last {{ summary.get('period_days',
+                7) }} days — read-only analytics</p>
+        </div>
+    </div>
+
+    {% if summary and not summary.get('error') and summary.get('total_scanned', 0) > 0 %}
+
+    {% if profile_stats %}
+    <!-- User Risk Profile -->
+    <div
+        class="bg-gradient-to-br from-indigo-600 to-indigo-700 dark:from-indigo-600 dark:to-indigo-800 rounded-2xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row items-center justify-between mb-2">
+        <div class="mb-6 md:mb-0">
+            <h2 class="text-2xl font-bold mb-2 flex items-center gap-2">
+                <span>🛡️</span> Your Privacy-Safe Risk Profile
+            </h2>
+            <p class="text-indigo-100/90 text-sm max-w-lg">
+                Your average risk score is calculated from anonymous metadata of your last 50 emails.
+                Keep this score low by spotting phishing attempts!
+            </p>
+        </div>
+        <div class="flex flex-wrap justify-center gap-8 md:gap-12 text-center">
+            <div>
+                <div class="text-4xl font-bold mb-1">{{ profile_stats.average_score }}</div>
+                <div class="text-xs uppercase tracking-wider text-indigo-200 font-semibold">Avg Score</div>
+            </div>
+            <div>
+                <div
+                    class="text-4xl font-bold mb-1 {{ 'text-green-300' if profile_stats.current_risk_level == 'Low' else 'text-yellow-300' if profile_stats.current_risk_level == 'Medium' else 'text-red-300' }}">
+                    {{ profile_stats.current_risk_level }}</div>
+                <div class="text-xs uppercase tracking-wider text-indigo-200 font-semibold">Current Risk</div>
+            </div>
+            <div>
+                <div class="text-4xl font-bold mb-1">{{ profile_stats.total_scanned }}</div>
+                <div class="text-xs uppercase tracking-wider text-indigo-200 font-semibold">Analyzed</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Key Metrics -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Emails Scanned -->
+        <div style="--stagger-delay: 0ms"
+            class="animate-stagger-in hover-elevate bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-4xl mb-3">📧</div>
+            <div class="text-3xl font-bold text-slate-900 dark:text-white mb-1">{{ summary.total_scanned }}</div>
+            <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Emails Scanned
+            </div>
+            <div class="text-xs text-slate-400 dark:text-slate-500 mt-2">{{ summary.total_all_time }} all-time</div>
+        </div>
+
+        <!-- High Risk -->
+        <div style="--stagger-delay: 80ms"
+            class="animate-stagger-in hover-elevate bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 border-b-4 border-b-red-500 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-4xl mb-3">🚨</div>
+            <div class="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">{{ summary.high_risk_count }}</div>
+            <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">High Risk</div>
+            <div class="text-xs text-red-500/80 dark:text-red-400/80 mt-2 font-medium">
+                {% if summary.total_scanned > 0 %}
+                {{ (summary.high_risk_count / summary.total_scanned * 100) | round(0) | int }}% of scanned
+                {% else %}0%{% endif %}
+            </div>
+        </div>
+
+        <!-- Medium Risk -->
+        <div style="--stagger-delay: 160ms"
+            class="animate-stagger-in hover-elevate bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 border-b-4 border-b-yellow-500 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-4xl mb-3">⚠️</div>
+            <div class="text-3xl font-bold text-yellow-600 dark:text-yellow-400 mb-1">{{ summary.medium_risk_count }}
+            </div>
+            <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Medium Risk
+            </div>
+            <div class="text-xs text-yellow-600/80 dark:text-yellow-400/80 mt-2 font-medium">
+                {% if summary.total_scanned > 0 %}
+                {{ (summary.medium_risk_count / summary.total_scanned * 100) | round(0) | int }}% of scanned
+                {% else %}0%{% endif %}
+            </div>
+        </div>
+
+        <!-- Low Risk -->
+        <div style="--stagger-delay: 240ms"
+            class="animate-stagger-in hover-elevate bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 border-b-4 border-b-green-500 shadow-sm flex flex-col items-center justify-center text-center">
+            <div class="text-4xl mb-3">✅</div>
+            <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-1">{{ summary.low_risk_count }}</div>
+            <div class="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Low Risk</div>
+            <div class="text-xs text-slate-400 dark:text-slate-500 mt-2">Avg Score: {{ summary.avg_score }}</div>
+        </div>
+    </div>
+
+    <!-- React Dashboard Root -->
+    <div id="react-dashboard-root"></div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Recent High-Risk Alerts -->
+        {% if summary.recent_alerts %}
+        <div style="--stagger-delay: 320ms"
+            class="animate-stagger-in bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <span>🚨</span> Recent High-Risk Alerts
+            </h2>
+            <div class="space-y-3">
+                {% for alert in summary.recent_alerts %}
+                <div
+                    class="p-3 rounded-lg bg-red-50 dark:bg-red-500/5 border border-red-100 dark:border-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/10 transition-colors">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="font-medium text-slate-900 dark:text-white text-sm truncate max-w-[200px]">{{
+                            alert.sender }}</span>
+                        <span
+                            class="inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-bold bg-red-200 text-red-800 dark:bg-red-500/20 dark:text-red-300">
+                            {{ alert.score | round(0) | int }}
+                        </span>
+                    </div>
+                    <div class="text-sm text-slate-600 dark:text-slate-300 mb-2 truncate">{{ alert.subject }}</div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span
+                            class="px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium">
+                            {{ alert.intent }}
+                        </span>
+                        <span class="text-slate-400 dark:text-slate-500">{{ alert.timestamp }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Top Risky Senders -->
+        {% if summary.top_risky_senders %}
+        <div style="--stagger-delay: 400ms"
+            class="animate-stagger-in bg-white dark:bg-slate-800/60 backdrop-blur-md rounded-xl p-6 border border-slate-200 dark:border-white/10 shadow-sm">
+            <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+                <span>👤</span> Top Risky Senders
+            </h2>
+            <div class="divide-y divide-slate-100 dark:divide-slate-700/50">
+                {% for sender, count in summary.top_risky_senders %}
+                <div class="py-3 flex justify-between items-center first:pt-0 last:pb-0">
+                    <span class="text-slate-700 dark:text-slate-300 text-sm truncate flex-1 pr-4"
+                        title="{{ sender }}">{{ sender }}</span>
+                    <span
+                        class="text-xs font-semibold px-2 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg whitespace-nowrap">
+                        {{ count }} email{{ 's' if count != 1 }}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <!-- Empty State -->
+    <div
+        class="text-center py-20 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div class="text-6xl mb-4 grayscale opacity-50">📈</div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">No data for this period</h2>
+        <p class="text-slate-600 dark:text-slate-400 max-w-md mx-auto mb-4">
+            {{ summary.get('error', 'Analyze some emails to see weekly security statistics here.') }}
+        </p>
+        {% if summary.get('total_all_time', 0) > 0 %}
+        <p
+            class="text-sm text-slate-500 dark:text-slate-500 mb-6 bg-slate-100 dark:bg-slate-800/50 inline-block px-4 py-2 rounded-lg">
+            You have {{ summary.total_all_time }} record(s) total, but none in the last {{ summary.get('period_days', 7)
+            }} days.
+        </p>
+        {% endif %}
+        <div>
+            <a href="{{ url_for('inbox') }}"
+                class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors shadow-sm">
+                Go to Inbox
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+{% if summary and summary.get('total_scanned', 0) > 0 %}
+<!-- Chart.js (Local) -->
+<script src="{{ url_for('static', filename='js/chart.umd.min.js') }}"></script>
+
+<!-- React & Babel (Local) -->
+<script src="{{ url_for('static', filename='js/vendor/react.development.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendor/react-dom.development.js') }}"></script>
+<script src="{{ url_for('static', filename='js/vendor/babel.min.js') }}"></script>
+
+<!-- Inject Data -->
+<script>
+    window.DASHBOARD_SUMMARY = {{ summary | tojson }};
+    window.WEEKLY_TREND = {{ weekly_trend | tojson }};
+</script>
+
+<!-- React Dashboard Component -->
+<script type="text/babel" src="{{ url_for('static', filename='js/dashboard_react.js') }}"></script>
+
+<!-- Count-Up Animation for Metric Numbers -->
+<script>
+    (function () {
+        function animateCountUp(el, target, duration) {
+            if (isNaN(target)) return;
+            var start = 0;
+            var startTime = null;
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                var progress = Math.min((timestamp - startTime) / duration, 1);
+                var eased = 1 - Math.pow(1 - progress, 3);
+                el.textContent = Math.round(eased * target);
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+        // Only animate metric cards (the 4 large bold numbers)
+        document.querySelectorAll('.grid.grid-cols-1.sm\\:grid-cols-2 .text-3xl.font-bold').forEach(function (el) {
+            var val = parseFloat(el.textContent);
+            if (!isNaN(val) && val > 0) animateCountUp(el, val, 800);
+        });
+    })();
+</script>
+{% endif %}
+{% endblock %}

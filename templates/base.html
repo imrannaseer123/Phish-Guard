@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Explainable Phishing Email Risk Analyzer - Analyze Gmail emails for phishing threats with transparent AI-powered risk scoring.">
+    <title>{% block title %}PhishGuard — Phishing Analyzer{% endblock %}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: '#0a0e1a',
+                        card: 'rgba(17, 24, 39, 0.7)',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script>
+            /* Apply saved theme immediately to prevent flash of wrong theme */
+            (function () {
+                var theme = localStorage.getItem('phishguard-theme') || 'dark';
+                if (theme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                    document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass-panel {
+                @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-xl;
+            }
+        }
+    </style>
+</head>
+
+<body
+    class="bg-slate-50 text-slate-900 dark:bg-[#0a0e1a] dark:text-slate-100 min-h-screen flex flex-col font-sans transition-colors duration-300">
+    <nav
+        class="sticky top-0 z-50 w-full backdrop-blur-lg border-b border-slate-200 dark:border-white/10 bg-white/80 dark:bg-[#0a0e1a]/80 transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Brand -->
+                <div class="flex-shrink-0">
+                    <a href="{{ url_for('about') }}" class="flex items-center gap-2 group">
+                        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PhishGuard Logo"
+                            class="h-10 w-auto transform group-hover:scale-105 transition-transform duration-200">
+                        <span class="font-bold text-xl tracking-tight">Phish<span
+                                class="text-indigo-600 dark:text-indigo-500">Guard</span></span>
+                    </a>
+                </div>
+
+                <!-- Desktop Nav -->
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-1">
+                        {% set nav_base = "nav-link-animated px-3 py-2 rounded-md text-sm font-medium transition-colors
+                        text-slate-600 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-white" %}
+                        {% set nav_active = "nav-active text-indigo-600 bg-indigo-50 dark:text-indigo-400
+                        dark:bg-indigo-500/10" %}
+
+                        <a href="{{ url_for('index') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'index' }}">Home</a>
+                        <a href="{{ url_for('inbox') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'inbox' }}">Inbox</a>
+                        <a href="{{ url_for('history') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'history' }}">History</a>
+                        <a href="{{ url_for('dashboard') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'dashboard' }}">Dashboard</a>
+
+                        <!-- Advanced Features -->
+                        <a href="{{ url_for('campaigns') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'campaigns' }}">Campaigns</a>
+                        <a href="{{ url_for('user_risk_profile') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'user_risk_profile' }}">Risk
+                            Profile</a>
+                        <a href="{{ url_for('training') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'training' }}">Training</a>
+
+                        <div class="h-4 w-px bg-slate-300 dark:bg-white/10 mx-2"></div>
+
+                        <a href="{{ url_for('admin_weights') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint == 'admin_weights' }}">Weights</a>
+                        {% if ASCEND_ENABLED %}
+                        <a href="{{ url_for('ascend.dashboard') }}"
+                            class="{{ nav_base }} {{ nav_active if request.endpoint and request.endpoint.startswith('ascend.') }}">🔬
+                            Ascend</a>
+                        {% endif %}
+                        <a href="{{ url_for('logout') }}"
+                            class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 px-3 py-2 rounded-md text-sm font-medium transition-colors">Logout</a>
+
+                        <button id="themeToggle"
+                            class="p-2 rounded-full transition-colors ml-2 text-slate-600 hover:bg-slate-100 hover:text-orange-500 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-yellow-400"
+                            aria-label="Toggle theme">
+                            <span id="theme-icon-moon" class="dark:hidden">🌙</span>
+                            <span id="theme-icon-sun" class="hidden dark:block">☀️</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button class="mobile-menu-btn md:hidden" id="mobileMenuBtn" aria-label="Open menu">
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Nav Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay">
+        <a href="{{ url_for('index') }}" class="{{ 'nav-active' if request.endpoint == 'index' }}">🏠 Home</a>
+        <a href="{{ url_for('inbox') }}" class="{{ 'nav-active' if request.endpoint == 'inbox' }}">📬 Inbox</a>
+        <a href="{{ url_for('history') }}" class="{{ 'nav-active' if request.endpoint == 'history' }}">📊 History</a>
+        <a href="{{ url_for('dashboard') }}" class="{{ 'nav-active' if request.endpoint == 'dashboard' }}">📈
+            Dashboard</a>
+        <a href="{{ url_for('campaigns') }}" class="{{ 'nav-active' if request.endpoint == 'campaigns' }}">🔍
+            Campaigns</a>
+        <a href="{{ url_for('user_risk_profile') }}"
+            class="{{ 'nav-active' if request.endpoint == 'user_risk_profile' }}">🛡️ Risk Profile</a>
+        <a href="{{ url_for('training') }}" class="{{ 'nav-active' if request.endpoint == 'training' }}">🎯 Training</a>
+        <a href="{{ url_for('admin_weights') }}" class="{{ 'nav-active' if request.endpoint == 'admin_weights' }}">⚙️
+            Weights</a>
+        {% if ASCEND_ENABLED %}
+        <a href="{{ url_for('ascend.dashboard') }}"
+            class="{{ 'nav-active' if request.endpoint and request.endpoint.startswith('ascend.') }}">🔬 Ascend</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" style="color: #ef4444;">🚪 Logout</a>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+        {% for category, message in messages %}
+        <div
+            class="flash-auto-dismiss rounded-lg p-4 mb-4 flex items-center justify-between border {{ 'bg-green-50 border-green-200 text-green-700 dark:bg-green-500/10 dark:border-green-500/20 dark:text-green-400' if category == 'success' else 'bg-red-50 border-red-200 text-red-700 dark:bg-red-500/10 dark:border-red-500/20 dark:text-red-400' }}">
+            <div class="flex items-center gap-3">
+                <span>{{ '✅' if category == 'success' else '⚠️' }}</span>
+                <span class="font-medium">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()"
+                class="text-black/50 hover:text-black dark:text-white/50 dark:hover:text-white transition-colors">×</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <main class="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div id="page-content">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer
+        class="border-t border-slate-200 bg-white dark:border-white/10 dark:bg-[#0a0e1a]/50 mt-auto transition-colors duration-300">
+        <div
+            class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                <span>🛡️</span>
+                <p class="text-sm">© PhishGuard — Explainable Phishing Risk Analyzer</p>
+            </div>
+            <p class="text-sm text-slate-400 dark:text-slate-500">Privacy-preserving • Rule-based • Fully
+                transparent</p>
+        </div>
+    </footer>
+
+    <script>
+        /* Theme toggle logic with Tailwind support + spin animation */
+        (function () {
+            var toggle = document.getElementById('themeToggle');
+            if (!toggle) return;
+
+            toggle.addEventListener('click', function () {
+                var html = document.documentElement;
+                // Add spin animation
+                toggle.classList.add('theme-spin');
+                setTimeout(function () { toggle.classList.remove('theme-spin'); }, 400);
+
+                if (html.classList.contains('dark')) {
+                    // Switch to Light
+                    html.classList.remove('dark');
+                    html.setAttribute('data-theme', 'light');
+                    localStorage.setItem('phishguard-theme', 'light');
+                } else {
+                    // Switch to Dark
+                    html.classList.add('dark');
+                    html.removeAttribute('data-theme');
+                    localStorage.setItem('phishguard-theme', 'dark');
+                }
+            });
+        })();
+
+        /* Mobile menu toggle */
+        (function () {
+            var btn = document.getElementById('mobileMenuBtn');
+            var overlay = document.getElementById('mobileNavOverlay');
+            if (!btn || !overlay) return;
+
+            btn.addEventListener('click', function () {
+                btn.classList.toggle('active');
+                overlay.classList.toggle('open');
+            });
+
+            // Close when clicking a link
+            overlay.querySelectorAll('a').forEach(function (link) {
+                link.addEventListener('click', function () {
+                    btn.classList.remove('active');
+                    overlay.classList.remove('open');
+                });
+            });
+        })();
+
+        /* Page Transition Logic */
+        document.addEventListener('DOMContentLoaded', () => {
+            // Check for reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReducedMotion) return;
+
+            // Handle link clicks
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+
+                // Ignore if:
+                // 1. Not a link
+                // 2. Opens in new tab
+                // 3. Anchor link to same page
+                // 4. External link (simplified check)
+                // 5. Modifier keys pressed
+                if (!link ||
+                    link.target === '_blank' ||
+                    link.getAttribute('href').startsWith('#') ||
+                    e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) {
+                    return;
+                }
+
+                const href = link.getAttribute('href');
+
+                // Allow default behavior for download links or JS calls
+                if (!href || href.startsWith('javascript:') || href.startsWith('mailto:')) return;
+
+                e.preventDefault();
+                document.body.classList.add('exiting');
+
+                // Wait for animation to finish (300ms matches CSS)
+                setTimeout(() => {
+                    window.location.href = href;
+                }, 300);
+            });
+        });
+
+        // Handle bfcache (back/forward cache)
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                document.body.classList.remove('exiting');
+            }
+        });
+    </script>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2 pointer-events-none">
+        <style>
+            #toast-container>div {
+                pointer-events: auto;
+            }
+        </style>
+    </div>
+
+    <script>
+        /* Global Toast Notification System */
+        window.showToast = function (message, type) {
+            type = type || 'info';
+            console.log('showToast called:', message, type);
+            var container = document.getElementById('toast-container');
+            if (!container) {
+                console.error('Toast container not found!');
+                alert(message);
+                return;
+            }
+
+            var toast = document.createElement('div');
+
+            var icon = 'ℹ️';
+            var bgClass = 'bg-white dark:bg-slate-800';
+            var borderClass = 'border-slate-200 dark:border-slate-700';
+            var textClass = 'text-slate-800 dark:text-slate-200';
+
+            if (type === 'success') {
+                icon = '✅';
+                bgClass = 'bg-green-50 dark:bg-green-900/80';
+                borderClass = 'border-green-200 dark:border-green-500/30';
+                textClass = 'text-green-800 dark:text-green-200';
+            } else if (type === 'error') {
+                icon = '❌';
+                bgClass = 'bg-red-50 dark:bg-red-900/80';
+                borderClass = 'border-red-200 dark:border-red-500/30';
+                textClass = 'text-red-800 dark:text-red-200';
+            }
+
+            toast.className = 'flex items-center gap-3 px-5 py-3 rounded-xl border shadow-2xl transition-all duration-500 ease-out ' + bgClass + ' ' + borderClass + ' ' + textClass;
+            toast.style.cssText = 'width:max-content;max-width:340px;opacity:0;transform:translateX(80px) scale(0.95);';
+            toast.innerHTML = '<span style="font-size:1.3em">' + icon + '</span><span class="font-semibold text-sm">' + message + '</span>';
+
+            container.appendChild(toast);
+
+            // Animate in with a smooth slide + fade
+            setTimeout(function () {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0) scale(1)';
+            }, 50);
+
+            // Auto-remove with fade out
+            setTimeout(function () {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(80px) scale(0.95)';
+                setTimeout(function () {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 500);
+            }, 3500);
+        };
+    </script>
+
+    {% block scripts %}{% endblock %}
+    <script>
+        // Feature flag for JS
+        const ENABLE_CHATBOT = {{ ENABLE_CHATBOT | tojson }};
+    </script>
+    {% if ENABLE_CHATBOT %}
+    <script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+    {% endif %}
+</body>
+
+</html>

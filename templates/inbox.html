@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% block title %}Inbox — PhishGuard{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 dark:text-white mb-2">📬 Your Inbox</h1>
+        <p class="text-slate-600 dark:text-slate-400">Select an email to analyze for phishing indicators</p>
+    </div>
+
+    {% if emails %}
+    <div class="space-y-4" id="inbox-list">
+        {% for email in emails %}
+        <div class="email-card animate-stagger-in hover-elevate bg-white dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden hover:border-indigo-500/50 hover:shadow-lg transition-all group relative"
+            style="--stagger-delay: {{ loop.index0 * 50 }}ms" id="email-card-{{ loop.index }}"
+            data-message-id="{{ email.id }}">
+
+            <!-- Hover Glow Effect -->
+            <div
+                class="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/5 to-purple-500/0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            </div>
+
+            <!-- Email Header Row -->
+            <div class="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center gap-4 relative z-10">
+                <div class="flex items-start gap-4 min-w-0">
+                    <div
+                        class="h-12 w-12 rounded-full bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-lg shrink-0 border border-indigo-100 dark:border-indigo-500/30">
+                        {{ email.sender[0] | upper }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
+                            <span class="font-semibold text-slate-900 dark:text-slate-100 truncate">{{ email.sender
+                                }}</span>
+                            <span
+                                class="text-xs text-slate-500 dark:text-slate-500 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-full whitespace-nowrap">{{
+                                email.date }}</span>
+                        </div>
+                        <div class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate pr-4">{{
+                            email.subject }}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 truncate line-clamp-1 mt-0.5">{{
+                            email.snippet }}</div>
+                    </div>
+                </div>
+
+                <div class="flex shrink-0 sm:ml-0 ml-16 gap-2">
+                    <button type="button"
+                        class="open-email-btn sm:w-auto text-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200"
+                        data-msgid="{{ email.id }}" data-sender="{{ email.sender }}" data-subject="{{ email.subject }}"
+                        data-date="{{ email.date }}">
+                        <span class="text-base">📖</span>
+                        <span>Open</span>
+                    </button>
+                    <a href="{{ url_for('analyze', message_id=email.id) }}"
+                        class="btn-ripple sm:w-auto text-center bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm hover:shadow shadow-indigo-500/20 flex items-center justify-center gap-1.5"
+                        id="analyze-{{ loop.index }}">
+                        <span class="text-base">🔍</span> Analyze
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div
+        class="text-center py-20 bg-white/5 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+        <div class="text-6xl mb-4 grayscale opacity-50">📭</div>
+        <h2 class="text-xl font-semibold text-slate-900 dark:text-white mb-2">No emails found</h2>
+        <p class="text-slate-600 dark:text-slate-400 max-w-sm mx-auto">Your inbox appears empty or we couldn't fetch
+            messages from Gmail.</p>
+    </div>
+    {% endif %}
+</section>
+
+<!-- ═══ Slide Panel Overlay ═══ -->
+<div id="slide-backdrop" onclick="closeSlidePanel()"
+    style="position:fixed; inset:0; z-index:9000; opacity:0; pointer-events:none; transition: opacity 0.35s ease;
+           background: linear-gradient(135deg, rgba(15,23,42,0.6) 0%, rgba(88,28,135,0.35) 50%, rgba(15,23,42,0.7) 100%);">
+</div>
+
+<!-- ═══ Slide Panel ═══ -->
+<div id="slide-panel" style="position:fixed; top:0; right:0; bottom:0; width:50%; min-width:380px; max-width:700px; z-index:9001;
+           transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+           display: flex; flex-direction: column; visibility: hidden;">
+
+    <!-- Glass panel background -->
+    <div style="position:absolute; inset:0; background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+                border-left: 1px solid #e2e8f0; box-shadow: -8px 0 30px rgba(0,0,0,0.12);" class="light-panel-bg">
+    </div>
+    <div style="position:absolute; inset:0; background: linear-gradient(180deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.98) 100%);
+                border-left: 1px solid rgba(255,255,255,0.08); box-shadow: -8px 0 30px rgba(0,0,0,0.4); display:none;"
+        class="dark-panel-bg"></div>
+
+    <!-- Panel Header -->
+    <div id="slide-panel-header"
+        style="position:relative; z-index:1; padding: 20px 24px; border-bottom: 1px solid; flex-shrink:0;"
+        class="border-slate-200 dark:border-white/10">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+            <span style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em;"
+                class="text-indigo-500 dark:text-indigo-400">📧 Email Preview</span>
+            <button onclick="closeSlidePanel()"
+                style="width:32px; height:32px; border-radius:8px; border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; transition: all 0.2s;"
+                class="bg-slate-100 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-500/20 text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400">
+                ✕
+            </button>
+        </div>
+        <h2 id="slide-subject" style="font-size:16px; font-weight:700; margin:0 0 8px 0; line-height:1.4;"
+            class="text-slate-900 dark:text-white"></h2>
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <span id="slide-sender" style="font-size:13px; font-weight:500;"
+                class="text-slate-600 dark:text-slate-300"></span>
+            <span id="slide-date" style="font-size:11px; padding:2px 8px; border-radius:999px;"
+                class="bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"></span>
+        </div>
+    </div>
+
+    <!-- Panel Body (scrollable) -->
+    <div id="slide-panel-body"
+        style="position:relative; z-index:1; flex:1; overflow-y:auto; padding: 20px 24px; scrollbar-width:thin;">
+        <!-- Loading state / email content -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    var emailCache = {};
+    var panelOpen = false;
+    var savedScrollY = 0;
+
+    function openSlidePanel(messageId, sender, subject, date) {
+        if (panelOpen) return;
+        panelOpen = true;
+
+        var backdrop = document.getElementById('slide-backdrop');
+        var panel = document.getElementById('slide-panel');
+
+        // Set header info
+        document.getElementById('slide-subject').textContent = subject;
+        document.getElementById('slide-sender').textContent = sender;
+        document.getElementById('slide-date').textContent = date;
+
+        // Handle dark/light panel backgrounds
+        var isDark = document.documentElement.classList.contains('dark') ||
+            document.documentElement.getAttribute('data-theme') === 'dark';
+        var lightBg = panel.querySelector('.light-panel-bg');
+        var darkBg = panel.querySelector('.dark-panel-bg');
+        if (isDark) {
+            lightBg.style.display = 'none';
+            darkBg.style.display = 'block';
+        } else {
+            lightBg.style.display = 'block';
+            darkBg.style.display = 'none';
+        }
+
+        // Show loading
+        var body = document.getElementById('slide-panel-body');
+        body.innerHTML =
+            '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:200px; gap:12px;">' +
+            '<div style="width:36px; height:36px; border:3px solid #e2e8f0; border-top-color:#6366f1; border-radius:50%; animation: spin 0.8s linear infinite;"></div>' +
+            '<span style="font-size:13px;" class="text-slate-400 dark:text-slate-500">Loading email...</span>' +
+            '</div>';
+
+        // Animate in
+        backdrop.style.pointerEvents = 'auto';
+        backdrop.style.opacity = '1';
+        panel.style.visibility = 'visible';
+        panel.style.transform = 'translateX(0)';
+
+        // Lock body scroll without layout shift
+        savedScrollY = window.scrollY;
+        document.body.style.position = 'fixed';
+        document.body.style.top = '-' + savedScrollY + 'px';
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+
+        // Fetch content
+        if (emailCache[messageId]) {
+            renderPanelContent(emailCache[messageId]);
+        } else {
+            fetch('/email/content/' + messageId)
+                .then(function (r) {
+                    if (!r.ok) throw new Error('Server error ' + r.status);
+                    return r.json();
+                })
+                .then(function (data) {
+                    if (data.error) throw new Error(data.error);
+                    emailCache[messageId] = data;
+                    renderPanelContent(data);
+                })
+                .catch(function (err) {
+                    body.innerHTML =
+                        '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:200px; gap:12px; text-align:center;">' +
+                        '<div style="font-size:40px;">⚠️</div>' +
+                        '<p style="font-size:14px; font-weight:600;" class="text-red-500">Failed to load email</p>' +
+                        '<p style="font-size:12px;" class="text-slate-500">' + escapeHtml(err.message) + '</p>' +
+                        '</div>';
+                });
+        }
+    }
+
+    function renderPanelContent(data) {
+        var body = document.getElementById('slide-panel-body');
+
+        if (data.body_html) {
+            // Render HTML emails inside a sandboxed iframe to prevent CSS leaking
+            var isDark = document.documentElement.classList.contains('dark') ||
+                document.documentElement.getAttribute('data-theme') === 'dark';
+            var bgColor = isDark ? '#0f172a' : '#ffffff';
+            var textColor = isDark ? '#cbd5e1' : '#334155';
+
+            var iframeHtml = '<!DOCTYPE html><html><head><meta charset="utf-8">' +
+                '<style>body{margin:0;padding:8px;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;' +
+                'font-size:14px;line-height:1.6;color:' + textColor + ';background:' + bgColor + ';word-break:break-word;}' +
+                'img{max-width:100%;height:auto;}a{color:#6366f1;}' +
+                'table{max-width:100%!important;width:auto!important;}' +
+                '</style></head><body>' + data.body_html + '</body></html>';
+
+            body.innerHTML =
+                '<iframe sandbox="allow-same-origin" srcdoc="" ' +
+                'style="width:100%;border:none;border-radius:8px;min-height:300px;background:' + bgColor + ';" ' +
+                'id="email-iframe"></iframe>';
+
+            // Set srcdoc after creating the element (avoids quote issues)
+            var iframe = document.getElementById('email-iframe');
+            iframe.setAttribute('srcdoc', iframeHtml);
+
+            // Auto-resize iframe to fit content
+            iframe.onload = function () {
+                try {
+                    var h = iframe.contentDocument.body.scrollHeight;
+                    iframe.style.height = Math.min(Math.max(h + 20, 200), 600) + 'px';
+                } catch (e) { iframe.style.height = '400px'; }
+            };
+        } else if (data.body_text) {
+            body.innerHTML =
+                '<div class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">' +
+                '<pre style="white-space:pre-wrap;word-break:break-word;font-family:inherit;margin:0;line-height:1.7;">' +
+                escapeHtml(data.body_text) + '</pre></div>';
+        } else {
+            body.innerHTML = '<p style="color:#94a3b8;font-style:italic;text-align:center;padding:40px 0;">No email content available.</p>';
+        }
+    }
+
+    function closeSlidePanel() {
+        if (!panelOpen) return;
+        panelOpen = false;
+
+        var backdrop = document.getElementById('slide-backdrop');
+        var panel = document.getElementById('slide-panel');
+
+        // Animate out
+        panel.style.transform = 'translateX(100%)';
+        setTimeout(function () { panel.style.visibility = 'hidden'; }, 400);
+        backdrop.style.opacity = '0';
+        backdrop.style.pointerEvents = 'none';
+
+        // Restore body scroll and position
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        window.scrollTo(0, savedScrollY);
+    }
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && panelOpen) {
+            closeSlidePanel();
+        }
+    });
+
+    function escapeHtml(text) {
+        var el = document.createElement('div');
+        el.textContent = text;
+        return el.innerHTML;
+    }
+
+    // Bind Open buttons via data attributes (avoids quote-breaking)
+    document.addEventListener('DOMContentLoaded', function () {
+        var buttons = document.querySelectorAll('.open-email-btn');
+        for (var i = 0; i < buttons.length; i++) {
+            (function (btn) {
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var msgId = btn.getAttribute('data-msgid');
+                    var sender = btn.getAttribute('data-sender');
+                    var subject = btn.getAttribute('data-subject');
+                    var date = btn.getAttribute('data-date');
+                    openSlidePanel(msgId, sender, subject, date);
+                });
+            })(buttons[i]);
+        }
+    });
+</script>
+
+<style>
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Email body styling inside the slide panel */
+    .slide-email-body img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        margin: 8px 0;
+    }
+
+    .slide-email-body a {
+        color: #6366f1;
+        text-decoration: underline;
+    }
+
+    .slide-email-body a:hover {
+        color: #4f46e5;
+    }
+
+    .slide-email-body table {
+        max-width: 100%;
+        overflow-x: auto;
+        display: block;
+    }
+
+    .slide-email-body h1,
+    .slide-email-body h2,
+    .slide-email-body h3 {
+        margin: 16px 0 8px;
+    }
+
+    .slide-email-body p {
+        margin: 0 0 10px;
+    }
+
+    .slide-email-body pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* Smooth scrollbar for the panel body */
+    #slide-panel-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    #slide-panel-body::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    #slide-panel-body::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+
+    .dark #slide-panel-body::-webkit-scrollbar-thumb {
+        background: #334155;
+    }
+</style>
+{% endblock %}
