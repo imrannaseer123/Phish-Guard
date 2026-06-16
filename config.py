@@ -103,7 +103,7 @@ INTENT_CATEGORIES = [
 # ─── Privacy & AI Configuration ──────────────────────────────────────────────
 PII_REDACTION_ENABLED = True
 ENABLE_CHATBOT = True
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyAtH6jYAm4a6Yo1LWXffYRQKFKgAyti9Fw") # Get from env or set here
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "use your gemini api key from google console - here") # Get from env or set here
 CHATBOT_MODEL = "gemini-flash-latest"
 
 # ─── External Threat Intelligence ────────────────────────────────────────────
