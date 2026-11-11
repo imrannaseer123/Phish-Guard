@@ -1,2 +1,38 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Google OAuth & Secret Credentials
 token.json
 credentials.json
+.env
+
+# SQLite databases & logs
+*.db
+data/*.db
+!data/.gitkeep
+
+# IDE & Editor configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Pytest / Coverage
+.pytest_cache/
+.coverage
+htmlcov/

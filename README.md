@@ -87,25 +87,63 @@ graph TB
 9. Download the JSON file and save it as `credentials.json` in the project root
 10. Go to **OAuth Consent Screen** and add your Google account as a **Test User**
 
-### 2. Install Dependencies
+### 2. Environment Configuration (Optional)
+
+Copy `.env.example` to `.env` to configure your API keys (e.g. Google Gemini for AI chatbot and translation, VirusTotal, etc.):
 
 ```bash
-cd phishing-analyzer
+copy .env.example .env     # Windows CMD
+cp .env.example .env       # PowerShell / Bash
+```
+
+### 3. Install Dependencies
+
+Using the virtual environment:
+
+```bash
+# Windows
+.venv\Scripts\pip.exe install -r requirements.txt
+
+# Or with activated venv / system python
 pip install -r requirements.txt
 ```
 
-### 3. Run the Application
+### 4. Run the Application
+
+You can start PhishGuard using any of the following methods:
+
+- **Windows Batch (Double-click or CMD)**:
+  ```cmd
+  run.bat
+  ```
+
+- **PowerShell**:
+  ```powershell
+  .\run.ps1
+  ```
+
+- **Python CLI runner**:
+  ```bash
+  python run.py
+  # or with custom options
+  python run.py --port 5000 --host 127.0.0.1
+  ```
+
+Open your browser at **http://localhost:5000** (or **http://127.0.0.1:5000**).
+
+### 5. Run Tests (No Gmail Credentials Needed)
+
+PhishGuard includes a unified test runner executing all 8 feature test suites:
 
 ```bash
-python app.py
+python run_tests.py
 ```
 
-Open your browser at **http://localhost:5000**
-
-### 4. Run Tests (no Gmail needed)
+Or run individual suites in `tests/`:
 
 ```bash
-python test_engine.py
+python tests/test_engine.py
+python tests/test_ascend.py
 ```
 
 ---
@@ -113,42 +151,93 @@ python test_engine.py
 ## 🧩 Project Structure
 
 ```text
-phishing-analyzer/
-├── app.py                     # Flask web application & routes
-├── config.py                  # Central configuration
-├── database.py                # SQLite logging
-├── phishing_engine.py         # Main engine (orchestrates analyzers)
-├── risk_scorer.py             # Basic risk scoring & intent classification
-├── preprocessor.py            # Email text preprocessing
-├── gmail_*.py                 # Gmail OAuth & reading
-├── static/, templates/        # Premium UI assets & HTML templates
-├── requirements.txt           # Dependencies
+Phish-Guard/
+├── app.py                     # Flask web application & HTTP routes
+├── config.py                  # Central configuration & path manager
+├── run.py                     # CLI launcher & server entry point
+├── run.bat                    # Windows 1-click batch launcher
+├── run.ps1                    # Windows PowerShell launcher
+├── run_tests.py               # Unified test runner
+├── requirements.txt           # Project dependencies
+├── .env.example               # Environment variables template
+├── .gitignore                 # Git ignore rules
 │
-├── Modules (Analyzers):
-│   ├── multilingual.py        # Language detection and translation
-│   ├── header_forensics.py    # Email header analysis
-│   ├── ocr_analyzer.py        # Text extraction from images
-│   ├── qr_analyzer.py         # QR code detection & threat check
-│   ├── domain_heuristics.py   # Deep domain analysis
-│   ├── linguistic_deception.py# AI-backed linguistic checks
-│   └── threat_intel.py        # External threat feed integration
-│
-├── Modules (Enrichment & Explainability):
-│   ├── killchain.py           # MITRE ATT&CK style mapping
+├── core/                      # Detection engine, scoring & intelligence services
+│   ├── __init__.py            # Core package exports
+│   ├── phishing_engine.py     # Main engine (orchestrates analyzers)
+│   ├── preprocessor.py        # Email text & HTML preprocessing
+│   ├── risk_scorer.py         # Risk scoring & intent classification
 │   ├── severity_index.py      # Phishing Severity Index (PSI)
 │   ├── safe_explainer.py      # Explain why an email is safe
-│   ├── header_graph.py        # Visual route graph for headers
-│   └── sender_trust.py        # Domain trust history
-│
-├── Modules (User & Admin Tools):
-│   ├── chatbot_service.py     # Context-aware AI assistant
+│   ├── killchain.py           # Cyber kill-chain / MITRE mapping
+│   ├── header_forensics.py    # Email header & SPF/DKIM analysis
+│   ├── header_graph.py        # Visual route graph for email hops
+│   ├── domain_heuristics.py   # Domain typosquatting & heuristics
+│   ├── threat_intel.py        # External threat feed integration
+│   ├── linguistic_deception.py# Psycholinguistic manipulation checks
+│   ├── multilingual.py        # Multilingual translation & analysis
+│   ├── ocr_analyzer.py        # Image OCR text extraction
+│   ├── qr_analyzer.py         # QR code detection & threat check
+│   ├── sender_trust.py        # Sender domain trust & reputation
+│   ├── user_profile.py        # User behavioral risk profiling
+│   ├── risk_profile.py        # User risk exposure breakdown
 │   ├── campaign_detector.py   # Cross-email campaign clustering
-│   ├── forensic_export.py     # JSON/PDF export for forensics
-│   ├── risk_profile.py        # User risk exposure
-│   ├── training_sim.py        # Interactive scenarios and simulations
-│   ├── weekly_summary.py      # Weekly security digests
-│   └── feedback.py / weight_advisor.py # Adaptive machine learning weights
-└── ascend/                    # Advanced counterfactual & psychological modules
+│   ├── training_sim.py        # Interactive simulation scenarios
+│   ├── weekly_summary.py      # Weekly security digest & trends
+│   ├── feedback.py            # User feedback collection
+│   ├── rule_confidence.py     # Rule precision & confidence tracker
+│   ├── weight_advisor.py      # Adaptive machine learning weights
+│   ├── chatbot_service.py     # Context-aware AI chatbot assistant
+│   ├── chatbot_blueprint.py   # Chatbot API routes blueprint
+│   ├── gmail_auth.py          # Gmail OAuth 2.0 flow handler
+│   ├── gmail_reader.py        # Gmail inbox retrieval & parser
+│   └── database.py            # SQLite database models & logs
+│
+├── ascend/                    # Advanced cognitive & explainability framework
+│   ├── ascend_blueprint.py    # ascend routes & API
+│   ├── counterfactual.py      # Counterfactual "What-If" reasoning
+│   ├── whatif_sandbox.py      # Educational weight simulation
+│   ├── psych_analyzer.py      # Psychological manipulation radar
+│   ├── threat_ontology.py     # Attack intent ontology mapper
+│   ├── risk_forecast.py       # Human vulnerability forecaster
+│   ├── incident_reporter.py   # Autonomous executive incident reports
+│   └── rule_feedback.py       # Adaptive rule weight adjustment
+│
+├── tests/                     # Test suites (runs offline without credentials)
+│   ├── test_engine.py         # Core detection pipeline tests
+│   ├── test_ascend.py         # ascend framework tests
+│   ├── test_header_features.py# Header forensics tests
+│   ├── test_image_features.py # OCR & QR code tests
+│   ├── test_multilingual.py   # Multilingual detection tests
+│   ├── test_risk_profiling.py # User profiling tests
+│   ├── test_threat_intel.py   # Threat feed tests
+│   ├── test_chatbot_context.py# Chatbot context injection tests
+│   └── test_chatbot_api.py    # Chatbot API live endpoint tests
+│
+├── data/                      # Persistent storage
+│   └── phishing_logs.db       # SQLite analysis logs & trends
+│
+├── scripts/                   # Utility & developer scripts
+│   ├── debug_gemini.py        # Gemini API connectivity debugger
+│   └── download_react.py      # Vendor React asset downloader
+│
+├── static/                    # CSS, JavaScript, vendor libraries & images
+│   ├── style.css
+│   ├── images/logo.png
+│   └── js/
+│
+└── templates/                 # Jinja2 HTML templates
+    ├── base.html
+    ├── index.html
+    ├── inbox.html
+    ├── report.html
+    ├── dashboard.html
+    ├── history.html
+    ├── training.html
+    ├── campaigns.html
+    ├── risk_profile.html
+    ├── ascend_dashboard.html
+    └── whatif.html
 ```
 
 ---

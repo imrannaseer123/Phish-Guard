@@ -2,9 +2,10 @@
 import sys
 import os
 
-# Ensure we can import from the current directory
-sys.path.append(os.getcwd())
-
+# Ensure project root is in path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 import config
 import chatbot_service
 

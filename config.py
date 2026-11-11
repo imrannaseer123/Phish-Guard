@@ -4,10 +4,41 @@ All thresholds, keyword lists, scoring weights, and paths are defined here.
 """
 
 import os
+import sys
 
-# ─── Paths ────────────────────────────────────────────────────────────────────
+# ─── Environment & Paths ──────────────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATABASE_PATH = os.path.join(BASE_DIR, "phishing_logs.db")
+CORE_DIR = os.path.join(BASE_DIR, "core")
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+# Ensure core directory is in Python search path for modules & analyzers
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+
+# Ensure data directory exists
+os.makedirs(DATA_DIR, exist_ok=True)
+
+# Simple .env loader if .env file exists in project root
+ENV_FILE = os.path.join(BASE_DIR, ".env")
+if os.path.exists(ENV_FILE):
+    try:
+        with open(ENV_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, val = line.split("=", 1)
+                    key = key.strip()
+                    val = val.strip().strip("'\"")
+                    if key and key not in os.environ:
+                        os.environ[key] = val
+    except Exception:
+        pass
+
+# Prefer data/phishing_logs.db, fallback to root if old db exists
+DEFAULT_DB = os.path.join(DATA_DIR, "phishing_logs.db")
+ROOT_DB = os.path.join(BASE_DIR, "phishing_logs.db")
+DATABASE_PATH = DEFAULT_DB if (os.path.exists(DEFAULT_DB) or not os.path.exists(ROOT_DB)) else ROOT_DB
+
 CREDENTIALS_FILE = os.path.join(BASE_DIR, "credentials.json")
 TOKEN_FILE = os.path.join(BASE_DIR, "token.json")
 
