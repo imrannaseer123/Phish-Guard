@@ -15,10 +15,11 @@ Routes:
 """
 
 import json
-from flask import Blueprint, render_template, request, jsonify, Response
+from flask import Blueprint, request, jsonify, Response
 
 import config
 import database
+from ui_bridge import render_ui
 
 # ─── Fail-safe imports for each ascend module ─────────────────────────────
 
@@ -92,8 +93,9 @@ def dashboard():
         except Exception:
             pass
 
-    return render_template(
-        "ascend_dashboard.html",
+    return render_ui(
+        "ascend_dashboard",
+        title="Ascend Dashboard — PhishGuard",
         forecast=forecast_data,
         feedback_suggestions=feedback_suggestions,
         module_status={
@@ -128,8 +130,9 @@ def whatif_page():
     except Exception:
         pass
 
-    return render_template(
-        "whatif.html",
+    return render_ui(
+        "whatif",
+        title="What-If Sandbox — PhishGuard",
         recent_analyses=recent,
         default_weights=config.SCORE_WEIGHTS,
     )
@@ -230,8 +233,8 @@ def feedback_suggestions():
 def incident_report(message_id):
     """View an incident report for a specific analysis."""
     if not INCIDENT_OK:
-        return render_template("incident_report.html", report=None,
-                               error="Incident reporter not available.")
+        return render_ui("incident_report", title="Incident Report — PhishGuard", report=None,
+                         error="Incident reporter not available.")
 
     try:
         # Retrieve analysis log
@@ -243,8 +246,8 @@ def incident_report(message_id):
         conn.close()
 
         if not row:
-            return render_template("incident_report.html", report=None,
-                                   error="No analysis found for this email.")
+            return render_ui("incident_report", title="Incident Report — PhishGuard", report=None,
+                             error="No analysis found for this email.")
 
         log = dict(row)
         findings = json.loads(log.get("findings", "[]"))
@@ -252,8 +255,10 @@ def incident_report(message_id):
         risk_level = log.get("risk_level", "Unknown")
 
         if not incident_reporter.should_generate_report(risk_score):
-            return render_template(
-                "incident_report.html", report=None,
+            return render_ui(
+                "incident_report",
+                title="Incident Report — PhishGuard",
+                report=None,
                 error=f"Risk score ({risk_score:.0f}) is below the incident threshold "
                       f"({incident_reporter.ascend_config.INCIDENT_THRESHOLD})."
             )
@@ -283,11 +288,11 @@ def incident_report(message_id):
             summary=log.get("summary", ""),
         )
 
-        return render_template("incident_report.html", report=report, error=None)
+        return render_ui("incident_report", title="Incident Report — PhishGuard", report=report, error=None)
 
     except Exception as e:
-        return render_template("incident_report.html", report=None,
-                               error=f"Failed to generate report: {str(e)}")
+        return render_ui("incident_report", title="Incident Report — PhishGuard", report=None,
+                         error=f"Failed to generate report: {str(e)}")
 
 
 @ascend_bp.route("/incident/<message_id>/export")
