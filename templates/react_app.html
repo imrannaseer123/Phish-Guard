@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PhishGuard — Explainable phishing email risk analyzer with transparent rule-based scoring and forensic telemetry.">
+    <title>{{ payload.title if payload and payload.title else "PhishGuard" }}</title>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/logo.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        (function () {
+            try {
+                var theme = localStorage.getItem('phishguard-theme') || 'dark';
+                var root = document.documentElement;
+                if (theme === 'light') {
+                    root.classList.remove('dark');
+                    root.setAttribute('data-theme', 'light');
+                } else {
+                    root.classList.add('dark');
+                    root.setAttribute('data-theme', 'dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='dist/assets/app.css') }}">
+</head>
+<body class="antialiased">
+    <div id="root"></div>
+    <script id="__PHISHGUARD_DATA__" type="application/json">{{ payload | tojson }}</script>
+    <script type="module" src="{{ url_for('static', filename='dist/assets/app.js') }}"></script>
+</body>
+</html>
+

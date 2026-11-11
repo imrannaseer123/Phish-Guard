@@ -33,6 +33,7 @@ import config
 import gmail_auth
 import gmail_reader
 import database
+from ui_bridge import render_ui
 from phishing_engine import EmailData, analyze_email
 from risk_scorer import generate_report
 
@@ -166,6 +167,8 @@ if config.ASCEND_ENABLED:
 
 app = Flask(__name__)
 app.secret_key = config.SECRET_KEY
+app.config["CHATBOT_ACTIVE"] = config.ENABLE_CHATBOT and CHATBOT_AVAILABLE
+app.config["ASCEND_ACTIVE"] = config.ASCEND_ENABLED and ASCEND_AVAILABLE
 
 # Inject toggles into all templates
 @app.context_processor
@@ -200,13 +203,13 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 def index():
     """Landing page."""
     authenticated = gmail_auth.get_credentials() is not None
-    return render_template("index.html", authenticated=authenticated)
+    return render_ui("home", title="PhishGuard — Explainable Phishing Email Analyzer", authenticated=authenticated)
 
 
 @app.route("/about")
 def about():
     """About page — project details, uses, and purposes."""
-    return render_template("about.html")
+    return render_ui("about", title="About — PhishGuard")
 
 
 @app.route("/auth")
@@ -262,7 +265,7 @@ def inbox():
 
     try:
         emails = gmail_reader.list_inbox(creds)
-        return render_template("inbox.html", emails=emails)
+        return render_ui("inbox", title="Inbox — PhishGuard", emails=emails)
     except Exception as e:
         flash(f"Failed to load inbox: {str(e)}", "error")
         return redirect(url_for("index"))
@@ -487,8 +490,9 @@ def analyze(message_id):
             except Exception:
                 pass
 
-        return render_template(
-            "report.html",
+        return render_ui(
+            "report",
+            title="Analysis Report — PhishGuard",
             email=msg,
             report=report,
             findings_serialized=findings_serialized,
@@ -522,7 +526,7 @@ def analyze(message_id):
 def history():
     """Show past analysis history."""
     logs = database.get_history()
-    return render_template("history.html", logs=logs)
+    return render_ui("history", title="Analysis History — PhishGuard", logs=logs)
 
 
 @app.route("/history/clear", methods=["POST"])
@@ -607,8 +611,9 @@ def admin_weights():
         except Exception:
             pass
 
-    return render_template(
-        "admin.html",
+    return render_ui(
+        "admin",
+        title="Weight Advisor — PhishGuard Admin",
         suggestions=suggestions,
         feedback_stats=feedback_stats,
         current_weights=config.SCORE_WEIGHTS,
@@ -637,7 +642,7 @@ def dashboard():
         except Exception:
             pass
 
-    return render_template("dashboard.html", summary=summary, profile_stats=profile_stats, weekly_trend=weekly_trend)
+    return render_ui("dashboard", title="Security Dashboard — PhishGuard", summary=summary, profile_stats=profile_stats, weekly_trend=weekly_trend)
 
 
 # ─── v2 Feature 3: Campaign Detection Dashboard ──────────────────────────────
@@ -651,7 +656,7 @@ def campaigns():
             campaign_list = campaign_detector.get_campaigns(limit=20)
         except Exception:
             pass
-    return render_template("campaigns.html", campaigns=campaign_list)
+    return render_ui("campaigns", title="Phishing Campaigns — PhishGuard", campaigns=campaign_list)
 
 
 # ─── v2 Feature 6: User Risk Profile ─────────────────────────────────────────
@@ -665,7 +670,7 @@ def user_risk_profile():
             profile = risk_profile_module.get_risk_profile(days=30)
         except Exception:
             profile = {"error": "Failed to compute risk profile"}
-    return render_template("risk_profile.html", profile=profile)
+    return render_ui("risk_profile", title="Risk Profile — PhishGuard", profile=profile)
 
 
 # ─── v2 Feature 8: Forensic Evidence Export ──────────────────────────────────
@@ -744,7 +749,7 @@ def training():
             stats = training_sim.get_training_stats()
         except Exception:
             pass
-    return render_template("training.html", scenarios=scenarios, stats=stats)
+    return render_ui("training", title="Security Training — PhishGuard", scenarios=scenarios, stats=stats)
 
 
 @app.route("/training/<scenario_id>", methods=["GET", "POST"])
@@ -758,19 +763,21 @@ def training_scenario(scenario_id):
         user_guess = request.form.get("guess", "")
         result = training_sim.evaluate_user_guess(scenario_id, user_guess)
         scenario = training_sim.get_scenario_detail(scenario_id)
-        return render_template("training.html",
-                               scenario=scenario, result=result,
-                               scenarios=training_sim.get_training_scenarios(),
-                               stats=training_sim.get_training_stats())
+        return render_ui("training",
+                         title="Security Training — PhishGuard",
+                         scenario=scenario, result=result,
+                         scenarios=training_sim.get_training_scenarios(),
+                         stats=training_sim.get_training_stats())
 
     scenario = training_sim.get_scenario_detail(scenario_id)
     if not scenario:
         flash("Scenario not found.", "warning")
         return redirect(url_for("training"))
-    return render_template("training.html",
-                           scenario=scenario,
-                           scenarios=training_sim.get_training_scenarios(),
-                           stats=training_sim.get_training_stats())
+    return render_ui("training",
+                     title="Security Training — PhishGuard",
+                     scenario=scenario,
+                     scenarios=training_sim.get_training_scenarios(),
+                     stats=training_sim.get_training_stats())
 
 
 # ─── Main ─────────────────────────────────────────────────────────────────────

@@ -23,17 +23,19 @@ Unlike black-box ML phishing detectors, PhishGuard provides **complete transpare
 
 ```mermaid
 graph TB
-    subgraph UI & Dashboards
-        A[Flask Web App] --> B[Analysis Report]
-        A --> C[History & Inbox]
-        A --> D[Campaigns & Trends]
-        A --> E[Risk Profile & Training]
-        A --> F[Admin Weight Advisor]
-        A --> G[AI Chatbot Assistant]
+    subgraph Frontend ["Frontend (React 19 + Tailwind CSS v4 + Vite)"]
+        UI[AppShell SPA & Theme Engine] --> P1[Overview & Inbox Preview]
+        UI --> P2[Forensic Analysis Report & Gauge]
+        UI --> P3[Security Dashboard & Chart.js]
+        UI --> P4[History, Campaigns & Risk Profile]
+        UI --> P5[Training Simulator & Admin Weights]
+        UI --> P6[Ascend Sandbox & AI Assistant]
     end
 
-    subgraph Integration Core
+    subgraph FlaskBackend ["Flask Application & UI Bridge"]
+        API[Flask Routes & core/ui_bridge.py] --> UI
         H[OAuth 2.0 Flow] --> I[Gmail API / Reader]
+        API --> I
     end
 
     subgraph Deep Analysis Engine
@@ -48,6 +50,7 @@ graph TB
         K1 & K2 & K3 & K4 --> L[Risk Scorer & PSI Framework]
         L --> M[Intent & Kill-Chain Mapper]
         M --> N[Report Generator & Safe Explainer]
+        N --> API
     end
 
     subgraph Learning & Feedback Loop
@@ -67,8 +70,9 @@ graph TB
 
 ## 📋 Prerequisites
 
-- Python 3.10+
-- A Google Cloud project with Gmail API enabled
+- Python 3.10+ (already configured in `.venv`)
+- Node.js 18+ and npm (only required if modifying/rebuilding the React frontend in `frontend/`)
+- A Google Cloud project with Gmail API enabled (for live Gmail inbox scanning; training simulations, dashboards, and tests run offline without it)
 
 ---
 
@@ -83,13 +87,13 @@ graph TB
 5. Go to **APIs & Services → Credentials**
 6. Click **Create Credentials → OAuth 2.0 Client ID**
 7. Select **Web Application** as the application type
-8. Add `http://localhost:5000/oauth/callback` to **Authorized redirect URIs**
+8. Add both `http://localhost:5000/oauth/callback` and `http://127.0.0.1:5000/oauth/callback` to **Authorized redirect URIs**
 9. Download the JSON file and save it as `credentials.json` in the project root
 10. Go to **OAuth Consent Screen** and add your Google account as a **Test User**
 
 ### 2. Environment Configuration (Optional)
 
-Copy `.env.example` to `.env` to configure your API keys (e.g. Google Gemini for AI chatbot and translation, VirusTotal, etc.):
+Copy `.env.example` to `.env` to configure your API keys (e.g., Google Gemini for AI chatbot and translation, VirusTotal, Safe Browsing):
 
 ```bash
 copy .env.example .env     # Windows CMD
@@ -98,19 +102,26 @@ cp .env.example .env       # PowerShell / Bash
 
 ### 3. Install Dependencies
 
-Using the virtual environment:
-
+**Backend (Python):**
 ```bash
-# Windows
+# Windows (.venv)
 .venv\Scripts\pip.exe install -r requirements.txt
 
-# Or with activated venv / system python
+# Or with an active virtualenv / system python
 pip install -r requirements.txt
+```
+
+**Frontend (React + Tailwind CSS — pre-built in `static/dist/`, rebuild only when editing UI):**
+```bash
+cd frontend
+npm install
+npm run build
+cd ..
 ```
 
 ### 4. Run the Application
 
-You can start PhishGuard using any of the following methods:
+Start PhishGuard using any of the following methods (pre-built React assets are served directly by Flask on port `5000`):
 
 - **Windows Batch (Double-click or CMD)**:
   ```cmd
@@ -129,21 +140,27 @@ You can start PhishGuard using any of the following methods:
   python run.py --port 5000 --host 127.0.0.1
   ```
 
-Open your browser at **http://localhost:5000** (or **http://127.0.0.1:5000**).
+- **Frontend Hot-Reload Development Mode (Optional)**:
+  Run Flask (`python run.py`) in one terminal and Vite in another:
+  ```bash
+  cd frontend
+  npm run dev
+  ```
+  Open `http://localhost:5173` for Vite HMR proxied to Flask, or **http://127.0.0.1:5000** for the production build.
 
 ### 5. Run Tests (No Gmail Credentials Needed)
 
-PhishGuard includes a unified test runner executing all 8 feature test suites:
+PhishGuard includes a unified test runner executing all 8 backend/engine test suites:
 
 ```bash
-python run_tests.py
+.venv\Scripts\python.exe run_tests.py
 ```
 
 Or run individual suites in `tests/`:
 
 ```bash
-python tests/test_engine.py
-python tests/test_ascend.py
+.venv\Scripts\python.exe tests/test_engine.py
+.venv\Scripts\python.exe tests/test_ascend.py
 ```
 
 ---
@@ -152,18 +169,50 @@ python tests/test_ascend.py
 
 ```text
 Phish-Guard/
-├── app.py                     # Flask web application & HTTP routes
-├── config.py                  # Central configuration & path manager
+├── app.py                     # Flask application, OAuth & API endpoints
+├── config.py                  # Central configuration, paths & .env loader
 ├── run.py                     # CLI launcher & server entry point
 ├── run.bat                    # Windows 1-click batch launcher
 ├── run.ps1                    # Windows PowerShell launcher
-├── run_tests.py               # Unified test runner
-├── requirements.txt           # Project dependencies
+├── run_tests.py               # Unified test runner (8 suites)
+├── requirements.txt           # Python dependencies
 ├── .env.example               # Environment variables template
 ├── .gitignore                 # Git ignore rules
 │
+├── frontend/                  # React 19 + Tailwind CSS v4 + Vite source
+│   ├── package.json           # Frontend dependencies & Vite scripts
+│   ├── vite.config.js         # Builds to static/dist/ + dev server proxy
+│   └── src/
+│       ├── main.jsx           # React entry point
+│       ├── App.jsx            # Client page router & ErrorBoundary
+│       ├── index.css          # Tailwind v4 tokens, Dark/Light theme ramps
+│       ├── context/
+│       │   └── AppContext.jsx # SPA navigation, theme state, flash & toasts
+│       ├── components/
+│       │   ├── AppShell.jsx   # 248px sidebar workbench, top bar, alerts
+│       │   ├── AppLink.jsx    # SPA link helper preserving native navigation
+│       │   ├── ChatbotWidget.jsx # Context-aware AI assistant drawer
+│       │   ├── ErrorBoundary.jsx # View error boundary
+│       │   ├── Icons.jsx      # Unified Lucide vector icons
+│       │   └── RiskBadge.jsx  # Semantic severity badges & score chips
+│       └── pages/             # 13 React page views matching all Flask routes
+│           ├── HomePage.jsx
+│           ├── InboxPage.jsx
+│           ├── ReportPage.jsx
+│           ├── HistoryPage.jsx
+│           ├── DashboardPage.jsx
+│           ├── CampaignsPage.jsx
+│           ├── RiskProfilePage.jsx
+│           ├── TrainingPage.jsx
+│           ├── AdminWeightsPage.jsx
+│           ├── AscendDashboardPage.jsx
+│           ├── WhatIfPage.jsx
+│           ├── IncidentReportPage.jsx
+│           └── AboutPage.jsx
+│
 ├── core/                      # Detection engine, scoring & intelligence services
 │   ├── __init__.py            # Core package exports
+│   ├── ui_bridge.py           # Serializes Flask props for HTML hydration & SPA JSON
 │   ├── phishing_engine.py     # Main engine (orchestrates analyzers)
 │   ├── preprocessor.py        # Email text & HTML preprocessing
 │   ├── risk_scorer.py         # Risk scoring & intent classification
@@ -186,26 +235,26 @@ Phish-Guard/
 │   ├── weekly_summary.py      # Weekly security digest & trends
 │   ├── feedback.py            # User feedback collection
 │   ├── rule_confidence.py     # Rule precision & confidence tracker
-│   ├── weight_advisor.py      # Adaptive machine learning weights
-│   ├── chatbot_service.py     # Context-aware AI chatbot assistant
+│   ├── weight_advisor.py      # Adaptive scoring weight advisor
+│   ├── chatbot_service.py     # Context-aware AI chatbot service
 │   ├── chatbot_blueprint.py   # Chatbot API routes blueprint
 │   ├── gmail_auth.py          # Gmail OAuth 2.0 flow handler
 │   ├── gmail_reader.py        # Gmail inbox retrieval & parser
 │   └── database.py            # SQLite database models & logs
 │
 ├── ascend/                    # Advanced cognitive & explainability framework
-│   ├── ascend_blueprint.py    # ascend routes & API
+│   ├── ascend_blueprint.py    # Ascend routes & simulation API
 │   ├── counterfactual.py      # Counterfactual "What-If" reasoning
 │   ├── whatif_sandbox.py      # Educational weight simulation
-│   ├── psych_analyzer.py      # Psychological manipulation radar
+│   ├── psych_analyzer.py      # Psychological manipulation analyzer
 │   ├── threat_ontology.py     # Attack intent ontology mapper
 │   ├── risk_forecast.py       # Human vulnerability forecaster
 │   ├── incident_reporter.py   # Autonomous executive incident reports
 │   └── rule_feedback.py       # Adaptive rule weight adjustment
 │
-├── tests/                     # Test suites (runs offline without credentials)
+├── tests/                     # Offline test suites (8 suites)
 │   ├── test_engine.py         # Core detection pipeline tests
-│   ├── test_ascend.py         # ascend framework tests
+│   ├── test_ascend.py         # Ascend framework tests
 │   ├── test_header_features.py# Header forensics tests
 │   ├── test_image_features.py # OCR & QR code tests
 │   ├── test_multilingual.py   # Multilingual detection tests
@@ -214,30 +263,25 @@ Phish-Guard/
 │   ├── test_chatbot_context.py# Chatbot context injection tests
 │   └── test_chatbot_api.py    # Chatbot API live endpoint tests
 │
-├── data/                      # Persistent storage
-│   └── phishing_logs.db       # SQLite analysis logs & trends
+├── design-system/             # Persisted UI/UX Pro Max design system specs
+│   └── phishguard/MASTER.md
+│
+├── data/                      # Persistent SQLite storage
+│   └── phishing_logs.db       # Analysis logs & risk trends
 │
 ├── scripts/                   # Utility & developer scripts
 │   ├── debug_gemini.py        # Gemini API connectivity debugger
-│   └── download_react.py      # Vendor React asset downloader
+│   └── download_react.py      # Legacy vendor asset helper
 │
-├── static/                    # CSS, JavaScript, vendor libraries & images
-│   ├── style.css
-│   ├── images/logo.png
-│   └── js/
+├── static/
+│   ├── dist/                  # Built Vite React + Tailwind CSS production bundle
+│   │   └── assets/
+│   │       ├── app.js
+│   │       └── app.css
+│   └── images/logo.png
 │
-└── templates/                 # Jinja2 HTML templates
-    ├── base.html
-    ├── index.html
-    ├── inbox.html
-    ├── report.html
-    ├── dashboard.html
-    ├── history.html
-    ├── training.html
-    ├── campaigns.html
-    ├── risk_profile.html
-    ├── ascend_dashboard.html
-    └── whatif.html
+└── templates/
+    └── react_app.html         # Server-hydrated React shell template
 ```
 
 ---
