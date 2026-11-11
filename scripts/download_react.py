@@ -8,7 +8,8 @@ FILES = {
     "babel.min.js": "https://unpkg.com/@babel/standalone/babel.min.js"
 }
 
-TARGET_DIR = os.path.join("static", "js", "vendor")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+TARGET_DIR = os.path.join(BASE_DIR, "static", "js", "vendor")
 os.makedirs(TARGET_DIR, exist_ok=True)
 
 for filename, url in FILES.items():

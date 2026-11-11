@@ -7,7 +7,10 @@ import sys
 import os
 
 # Ensure project root is in path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+import config
 
 # Fix Windows console encoding
 if sys.platform == "win32":

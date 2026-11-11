@@ -12,7 +12,10 @@ import os
 import json
 
 # Ensure project root is in path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+import config
 
 passed = 0
 failed = 0
@@ -282,4 +285,5 @@ else:
     print(f"  ❌ {failed} test(s) failed!")
 print("═" * 50)
 
-sys.exit(0 if failed == 0 else 1)
+if __name__ == "__main__":
+    sys.exit(0 if failed == 0 else 1)
